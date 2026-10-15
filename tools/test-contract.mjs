@@ -1,35 +1,41 @@
-// Runs the compiled contracts on an in-memory chain: profile → list → buy in BOT and USDT, plus every rule in the PRD.
+// Runs the compiled contract on an in-memory chain: profile → list → buy in BOT, plus every rule in the PRD.
 // Usage (from the project root): node tools/compile.mjs && node tools/test-contract.mjs
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ganache from 'ganache';
-import { BrowserProvider, ContractFactory, ZeroAddress, parseEther, parseUnits } from 'ethers';
+import { BrowserProvider, ContractFactory, ZeroAddress, parseEther } from 'ethers';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const artifact = (name) => JSON.parse(readFileSync(join(root, `build/${name}.json`), 'utf8'));
-const { abi, bytecode } = artifact('Resole');
-const token = artifact('TestUSDT');
+const { abi, bytecode } = JSON.parse(readFileSync(join(root, 'build/Resole.json'), 'utf8'));
 
-const provider = new BrowserProvider(
-  ganache.provider({ logging: { quiet: true }, chain: { hardfork: 'merge' }, wallet: { defaultBalance: 1000 } }),
+const chain = (chainId) => new BrowserProvider(
+  ganache.provider({ logging: { quiet: true }, chain: { hardfork: 'merge', chainId }, wallet: { defaultBalance: 1000 } }),
 );
+
+// --- deploys only on BOT Chain mainnet (677) ------------------------
+const elsewhere = chain(968);
+const factoryElsewhere = new ContractFactory(abi, bytecode, await elsewhere.getSigner(0));
+await assert.rejects(factoryElsewhere.deploy({ gasLimit: 3_000_000 }).then((c) => c.waitForDeployment()), 'deploy on chain 968 must fail');
+assert.deepEqual(new ContractFactory(abi, bytecode).interface.deploy.inputs, [], 'constructor takes no arguments');
+
+const provider = chain(677);
 const [seller, buyer, other, nobody] = await Promise.all([0, 1, 2, 3].map((i) => provider.getSigner(i)));
 // ganache under-estimates gas for some writes, so pin it
 const GAS = { gasLimit: 1_000_000 };
 
-const usdt = await (await new ContractFactory(token.abi, token.bytecode, seller).deploy()).waitForDeployment();
-const resole = await (await new ContractFactory(abi, bytecode, seller).deploy(await usdt.getAddress())).waitForDeployment();
+const resole = await (await new ContractFactory(abi, bytecode, seller).deploy()).waitForDeployment();
+assert.equal(await resole.BOT_CHAIN_ID(), 677n);
 const as = (signer) => resole.connect(signer);
 const events = (receipt) => receipt.logs.map((l) => resole.interface.parseLog(l)).filter(Boolean);
 const reverts = (call, name) => assert.rejects(call, (e) => e.revert?.name === name, `expected ${name}`);
 
-const BOT = 0, USDT = 1, SHOES = 0, APPAREL = 1;
+const SHOES = 0, APPAREL = 1;
 const CID = 'bafkreigh2akiscaildcqabsyg3dfr6chu3fgpregiymsck7e7aqa4s52zy';
 const listArgs = (o = {}) => [
   o.title ?? 'Leather Sneakers', o.kind ?? SHOES, o.size ?? '42', o.condition ?? 1, o.photos ?? [CID],
-  o.description ?? 'Worn twice.', o.currency ?? BOT, o.price ?? parseEther('120'),
+  o.description ?? 'Worn twice.', o.price ?? parseEther('120'),
 ];
 
 // --- profiles -------------------------------------------------------
@@ -54,13 +60,12 @@ await reverts(as(seller).list.staticCall(...listArgs({ photos: [CID, CID, CID, C
 await reverts(as(seller).list.staticCall(...listArgs({ photos: [CID, ''] })), 'EmptyPhoto');
 await reverts(as(seller).list.staticCall(...listArgs({ price: 0 })), 'ZeroPrice');
 
-// --- list in BOT and USDT -----------------------------------------
+// --- list -----------------------------------------------------------
 r = await (await as(seller).list(...listArgs({ photos: [CID, CID + '2', CID + '3'] }), GAS)).wait();
 console.log(`list (3 photos) gas: ${r.gasUsed}`);
 assert.equal(events(r)[0].name, 'Listed');
-assert.equal(events(r)[0].args.id, 0n);
-const usdtPrice = parseUnits('25', 6);
-await (await as(seller).list(...listArgs({ title: 'Wrap Coat', kind: APPAREL, size: 'M', currency: USDT, price: usdtPrice }), GAS)).wait();
+assert.deepEqual([events(r)[0].args.id, events(r)[0].args.seller, events(r)[0].args.price], [0n, seller.address, parseEther('120')]);
+await (await as(seller).list(...listArgs({ title: 'Wrap Coat', kind: APPAREL, size: 'M', price: parseEther('25') }), GAS)).wait();
 assert.equal(await resole.total(), 2n);
 
 let item = await resole.getItem(0);
@@ -77,17 +82,17 @@ await reverts(as(nobody).buy.staticCall(0, { value: parseEther('120') }), 'NoPro
 await reverts(as(seller).buy.staticCall(0, { value: parseEther('120') }), 'OwnItem');
 await reverts(as(buyer).buy.staticCall(0, { value: parseEther('119') }), 'WrongAmount');
 await reverts(as(buyer).buy.staticCall(0, { value: parseEther('121') }), 'WrongAmount');
-await reverts(as(buyer).buy.staticCall(1, { value: 1n }), 'WrongAmount'); // USDT item with BOT attached
+await reverts(as(buyer).buy.staticCall(0), 'WrongAmount');
 await reverts(as(buyer).buy.staticCall(99), 'ItemNotFound');
 
-// --- BOT purchase: money goes straight to the seller ---------------
+// --- purchase: money goes straight to the seller --------------------
 r = await (await as(buyer).buy(0, { value: parseEther('120'), ...GAS })).wait();
-console.log(`buy (BOT) gas: ${r.gasUsed}`);
+console.log(`buy gas: ${r.gasUsed}`);
 const sellerGain = (await provider.getBalance(seller.address, r.blockNumber)) - (await provider.getBalance(seller.address, r.blockNumber - 1));
 assert.equal(sellerGain, parseEther('120'));
 assert.equal(await provider.getBalance(await resole.getAddress()), 0n);
 const sold = events(r).find((e) => e.name === 'Sold');
-assert.deepEqual([sold.args.id, sold.args.buyer, sold.args.seller, sold.args.currency, sold.args.price], [0n, buyer.address, seller.address, 0n, parseEther('120')]);
+assert.deepEqual([sold.args.id, sold.args.buyer, sold.args.seller, sold.args.price], [0n, buyer.address, seller.address, parseEther('120')]);
 item = await resole.getItem(0);
 assert.equal(item.buyer, buyer.address);
 assert.ok(item.soldAt > 0n);
@@ -96,20 +101,10 @@ assert.ok(item.soldAt > 0n);
 await (await as(other).setProfile('Late', '')).wait();
 await reverts(as(other).buy.staticCall(0, { value: parseEther('120') }), 'AlreadySold');
 
-// --- USDT purchase: approve, then buy -----------------------------
-await (await usdt.connect(buyer).faucet(parseUnits('100', 6))).wait();
-await assert.rejects(as(buyer).buy.staticCall(1)); // no allowance yet
-await (await usdt.connect(buyer).approve(await resole.getAddress(), usdtPrice)).wait();
-r = await (await as(buyer).buy(1, GAS)).wait();
-console.log(`buy (USDT) gas: ${r.gasUsed}`);
-assert.equal(await usdt.balanceOf(seller.address), usdtPrice);
-assert.equal(await usdt.balanceOf(buyer.address), parseUnits('75', 6));
-assert.equal(await usdt.balanceOf(await resole.getAddress()), 0n);
-await reverts(as(other).buy.staticCall(1), 'AlreadySold');
-
 // --- one wallet, both roles ---------------------------------------
 await (await as(buyer).list(...listArgs({ title: 'Chelsea Boots', price: parseEther('1') }), GAS)).wait();
 await (await as(seller).buy(2, { value: parseEther('1'), ...GAS })).wait();
+await (await as(buyer).buy(1, { value: parseEther('25'), ...GAS })).wait();
 assert.deepEqual([...(await resole.itemsOf(seller.address))], [0n, 1n]);
 assert.deepEqual([...(await resole.itemsOf(buyer.address))], [2n]);
 assert.deepEqual([...(await resole.purchasesOf(buyer.address))], [0n, 1n]);
@@ -125,14 +120,9 @@ assert.deepEqual((await resole.getItems(0, 10)).map((i) => i.title), ['Leather S
 assert.deepEqual((await resole.getItems(1, 1)).map((i) => i.title), ['Wrap Coat']);
 assert.equal((await resole.getItems(5, 10)).length, 0);
 
-// --- no admin surface ---------------------------------------------
+// --- no admin surface, no token -----------------------------------
 const fns = resole.interface.fragments.filter((f) => f.type === 'function' && !['view', 'pure'].includes(f.stateMutability)).map((f) => f.name).sort();
 assert.deepEqual(fns, ['buy', 'list', 'setProfile']);
-
-// --- BOT-only deployment rejects USDT listings --------------------
-const botOnly = await (await new ContractFactory(abi, bytecode, seller).deploy(ZeroAddress)).waitForDeployment();
-await (await botOnly.setProfile('Vee', '')).wait();
-await reverts(botOnly.list.staticCall(...listArgs({ currency: USDT })), 'UsdtDisabled');
-await (await botOnly.list(...listArgs(), GAS)).wait();
+assert.ok(!resole.interface.fragments.some((f) => /usdt|currency/i.test(f.format('full'))), 'no USDT anywhere in the ABI');
 
 console.log('all contract checks passed');

@@ -1,4 +1,4 @@
-// Compiles contracts/Resole.sol and contracts/TestUSDT.sol and writes build/ artifacts.
+// Compiles contracts/Resole.sol and writes build/ artifacts.
 // Usage (from the project root): npm --prefix tools install && node tools/compile.mjs
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import solc from 'solc';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const CONTRACTS = ['Resole', 'TestUSDT'];
+const CONTRACTS = ['Resole'];
 
 // Pull every imported OpenZeppelin file into `sources`, so the standard JSON input is self-contained
 // and can be pasted straight into the explorer's verifier.

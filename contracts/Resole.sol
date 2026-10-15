@@ -1,18 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /// @title Resole — peer-to-peer second-hand shoes and apparel on BOT Chain
-/// @notice Sellers list items at their own price in BOT or USDT; buyers pay the seller directly.
+/// @notice Sellers list items at their own price in BOT; buyers pay the seller directly in BOT.
 ///         Listings are permanent: there is no edit, delete, unlist or re-price function.
 ///         The contract never holds funds, takes no fee and has no owner.
+///         It can only be deployed on BOT Chain mainnet (chain ID 677).
 contract Resole is ReentrancyGuard {
-    using SafeERC20 for IERC20;
-
-    enum Currency { BOT, USDT }
     enum Kind { Shoes, Apparel }
 
     struct Profile {
@@ -29,8 +25,7 @@ contract Resole is ReentrancyGuard {
         uint8 condition; // 0 New · 1 Like new · 2 Good · 3 Worn
         string[] photos; // IPFS CIDs
         string description;
-        Currency currency;
-        uint256 price; // in wei for BOT, in token units for USDT
+        uint256 price; // in wei (18 decimals of BOT)
         address buyer; // zero until sold
         uint64 listedAt;
         uint64 soldAt;
@@ -44,8 +39,8 @@ contract Resole is ReentrancyGuard {
     uint256 public constant MAX_CID = 100;
     uint256 public constant MAX_PHOTOS = 3;
     uint8 public constant CONDITIONS = 4;
+    uint256 public constant BOT_CHAIN_ID = 677;
 
-    IERC20 public immutable usdt;
     mapping(address => Profile) public profiles;
 
     Item[] private _items;
@@ -53,8 +48,8 @@ contract Resole is ReentrancyGuard {
     mapping(address => uint256[]) private _purchasesOf;
 
     event ProfileSet(address indexed user, string name);
-    event Listed(uint256 indexed id, address indexed seller, Currency currency, uint256 price);
-    event Sold(uint256 indexed id, address indexed buyer, address indexed seller, Currency currency, uint256 price);
+    event Listed(uint256 indexed id, address indexed seller, uint256 price);
+    event Sold(uint256 indexed id, address indexed buyer, address indexed seller, uint256 price);
 
     error EmptyName();
     error TextTooLong();
@@ -65,16 +60,16 @@ contract Resole is ReentrancyGuard {
     error BadPhotoCount();
     error EmptyPhoto();
     error ZeroPrice();
-    error UsdtDisabled();
     error ItemNotFound();
     error AlreadySold();
     error OwnItem();
     error WrongAmount();
     error PaymentFailed();
+    error WrongChain();
 
-    /// @param usdtToken USDT token on this chain, or address(0) to run BOT-only.
-    constructor(IERC20 usdtToken) {
-        usdt = usdtToken;
+    /// @notice No arguments. Reverts on any chain other than BOT Chain mainnet.
+    constructor() {
+        if (block.chainid != BOT_CHAIN_ID) revert WrongChain();
     }
 
     // ------------------------------------------------------------------
@@ -100,7 +95,6 @@ contract Resole is ReentrancyGuard {
         uint8 condition,
         string[] memory photos,
         string memory description,
-        Currency currency,
         uint256 price
     ) external returns (uint256 id) {
         if (!profiles[msg.sender].exists) revert NoProfile();
@@ -116,7 +110,6 @@ contract Resole is ReentrancyGuard {
             if (bytes(photos[i]).length > MAX_CID) revert TextTooLong();
         }
         if (price == 0) revert ZeroPrice();
-        if (currency == Currency.USDT && address(usdt) == address(0)) revert UsdtDisabled();
 
         id = _items.length;
         Item storage item = _items.push();
@@ -127,20 +120,18 @@ contract Resole is ReentrancyGuard {
         item.condition = condition;
         for (uint256 i; i < photos.length; ++i) item.photos.push(photos[i]);
         item.description = description;
-        item.currency = currency;
         item.price = price;
         item.listedAt = uint64(block.timestamp);
         _itemsOf[msg.sender].push(id);
 
-        emit Listed(id, msg.sender, currency, price);
+        emit Listed(id, msg.sender, price);
     }
 
     // ------------------------------------------------------------------
     // Buying
     // ------------------------------------------------------------------
 
-    /// @notice Buy an item. BOT items: send exactly `price` as value.
-    ///         USDT items: approve this contract for `price` first and send no value.
+    /// @notice Buy an item by sending exactly `price` in BOT.
     ///         Payment goes straight to the seller; the item is marked sold before money moves.
     function buy(uint256 id) external payable nonReentrant {
         if (id >= _items.length) revert ItemNotFound();
@@ -155,16 +146,11 @@ contract Resole is ReentrancyGuard {
 
         address seller = item.seller;
         uint256 price = item.price;
-        if (item.currency == Currency.BOT) {
-            if (msg.value != price) revert WrongAmount();
-            (bool ok, ) = payable(seller).call{value: price}("");
-            if (!ok) revert PaymentFailed();
-        } else {
-            if (msg.value != 0) revert WrongAmount();
-            usdt.safeTransferFrom(msg.sender, seller, price);
-        }
+        if (msg.value != price) revert WrongAmount();
+        (bool ok, ) = payable(seller).call{value: price}("");
+        if (!ok) revert PaymentFailed();
 
-        emit Sold(id, msg.sender, seller, item.currency, price);
+        emit Sold(id, msg.sender, seller, price);
     }
 
     // ------------------------------------------------------------------

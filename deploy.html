@@ -9,65 +9,42 @@
   body { margin: 0; font: 15px/1.55 system-ui, -apple-system, 'Segoe UI', sans-serif; color: #111; background: #fff; }
   main { max-width: 680px; margin: 0 auto; padding: 48px 20px; }
   h1 { font-size: 28px; text-transform: uppercase; margin: 0 0 8px; }
-  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .06em; margin: 32px 0 8px; }
   p { color: #555; }
   .row { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
   button { font: inherit; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; min-height: 48px; padding: 0 24px; border: 1px solid #111; background: #fff; color: #111; cursor: pointer; }
   button.solid { background: #111; color: #fff; }
   button:disabled { opacity: .35; cursor: not-allowed; }
-  label { display: block; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin: 12px 0 6px; }
-  input { width: 100%; box-sizing: border-box; font: 13px/1.4 ui-monospace, Menlo, monospace; padding: 10px 12px; border: 1px solid #ccc; }
   #log { border: 1px solid #e6e6e6; padding: 16px; min-height: 64px; white-space: pre-wrap; word-break: break-word; margin-top: 16px; }
   #log a { color: inherit; }
   code { background: #f6f6f6; padding: 2px 5px; font-size: 13px; }
   li { margin-bottom: 6px; color: #555; }
-  .hint { font-size: 13px; color: #777; margin: 6px 0 0; }
 </style>
 </head>
 <body>
 <main>
   <h1>Deploy Resole</h1>
-  <p>Deploys <code>contracts/Resole.sol</code> (Solidity 0.8.20, optimizer 200 runs, EVM <code>paris</code>) from your MetaMask account. The only constructor argument is the USDT token address. Deploy to testnet first, try the app, then deploy to mainnet.</p>
-
-  <h2>1 · Testnet (968)</h2>
-  <label for="usdt-testnet">USDT on testnet</label>
-  <input id="usdt-testnet" value="0x75edC9335175Fc0552D51D48439F229c10420fe3" spellcheck="false">
-  <p class="hint">Prefilled with the testnet USDT from the BOT Chain DEX token list. If you have none of it, deploy a mintable test token first and use that address.</p>
+  <p>Deploys <code>contracts/Resole.sol</code> (Solidity 0.8.20, optimizer 200 runs, EVM <code>paris</code>) from your MetaMask account. Prices are in BOT only. The contract has no constructor arguments and can only be deployed on <b>BOT Chain mainnet (chain ID 677)</b>: on any other network the deployment reverts.</p>
   <div class="row">
-    <button type="button" data-action="token">Deploy test USDT (968)</button>
-    <button type="button" data-action="deploy" data-net="testnet">Deploy Resole to Testnet</button>
+    <button type="button" class="solid" data-action="deploy">Deploy Resole to BOT Chain mainnet (677)</button>
   </div>
-
-  <h2>2 · Mainnet (677)</h2>
-  <label for="usdt-mainnet">USDT on mainnet</label>
-  <input id="usdt-mainnet" value="0xaBabc7Ddc03e501d190C676BF3d92ef0e6e87a3C" spellcheck="false">
-  <p class="hint">Official Tether USD on BOT Chain (6 decimals), as listed on dex.botchain.ai and scan.botchain.ai. Leave empty to ship BOT-only.</p>
-  <div class="row">
-    <button type="button" class="solid" data-action="deploy" data-net="mainnet">Deploy Resole to Mainnet</button>
-  </div>
-
   <div id="log">Ready. Each button asks you to confirm one transaction in MetaMask.</div>
   <ol>
-    <li>After deploying, open the app on this same localhost address (add <code>?net=testnet</code> for testnet). It picks up the new address automatically.</li>
-    <li>For the live site, paste the address into the matching <code>contract: ''</code> field in <code>CONFIG.networks</code> near the top of the script in <code>index.html</code>, set <code>fromBlock</code> to the block shown below, and update the README.</li>
+    <li>After deploying, open the app on this same localhost address. It picks up the new address automatically.</li>
+    <li>For the live site, paste the address into <code>contract: ''</code> in <code>CONFIG.networks.mainnet</code> near the top of the script in <code>index.html</code>, set <code>fromBlock</code> to the block shown above, and update the README.</li>
   </ol>
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.5/ethers.umd.min.js" crossorigin="anonymous"></script>
 <script>
 (() => {
-  const NETWORKS = {
-    mainnet: { chainId: 677, name: 'BOT Chain', rpc: 'https://rpc.botchain.ai', explorer: 'https://scan.botchain.ai' },
-    testnet: { chainId: 968, name: 'BOT Chain Testnet', rpc: 'https://rpc.bohr.life', explorer: 'https://scan.bohr.life' },
-  };
-  const ZERO = '0x0000000000000000000000000000000000000000';
+  const NET = { chainId: 677, name: 'BOT Chain', rpc: 'https://rpc.botchain.ai', explorer: 'https://scan.botchain.ai' };
   const log = document.getElementById('log');
-  const buttons = [...document.querySelectorAll('button[data-action]')];
+  const button = document.querySelector('button[data-action=deploy]');
   const say = (...nodes) => log.replaceChildren(...nodes);
   const link = (href, text) => Object.assign(document.createElement('a'), { href, textContent: text, target: '_blank', rel: 'noopener' });
 
-  async function switchTo(net) {
-    const chainId = '0x' + net.chainId.toString(16);
+  async function switchToBotChain() {
+    const chainId = '0x' + NET.chainId.toString(16);
     try {
       await ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId }] });
     } catch (e) {
@@ -75,78 +52,41 @@
       if (!unknownChain) throw e;
       await ethereum.request({
         method: 'wallet_addEthereumChain',
-        params: [{ chainId, chainName: net.name, nativeCurrency: { name: 'BOT', symbol: 'BOT', decimals: 18 }, rpcUrls: [net.rpc], blockExplorerUrls: [net.explorer] }],
+        params: [{ chainId, chainName: NET.name, nativeCurrency: { name: 'BOT', symbol: 'BOT', decimals: 18 }, rpcUrls: [NET.rpc], blockExplorerUrls: [NET.explorer] }],
       });
     }
   }
 
-  async function signerOn(net) {
-    say('Connecting to MetaMask…');
-    await ethereum.request({ method: 'eth_requestAccounts' });
-    await switchTo(net);
-    const signer = await new ethers.BrowserProvider(ethereum).getSigner();
-    if (Number((await signer.provider.getNetwork()).chainId) !== net.chainId) throw new Error(`MetaMask is not on ${net.name}.`);
-    return signer;
-  }
-
-  async function checkToken(signer, address) {
-    if (!address) return ZERO;
-    if (!ethers.isAddress(address)) throw new Error('The USDT address is not a valid address.');
-    const token = new ethers.Contract(address, ['function decimals() view returns (uint8)', 'function symbol() view returns (string)'], signer);
-    try {
-      const [decimals, symbol] = await Promise.all([token.decimals(), token.symbol()]);
-      say(`USDT check: ${symbol}, ${decimals} decimals.`);
-    } catch {
-      throw new Error('That USDT address is not an ERC-20 token on this network.');
-    }
-    return ethers.getAddress(address);
-  }
-
-  async function run(button) {
+  async function deploy() {
     if (!window.ethereum) return say('MetaMask was not found. Install it from ', link('https://metamask.io/download/', 'metamask.io'), ' and reload.');
-    const isToken = button.dataset.action === 'token';
-    const key = isToken ? 'testnet' : button.dataset.net;
-    const net = NETWORKS[key];
-    buttons.forEach((b) => (b.disabled = true));
+    button.disabled = true;
     try {
       say('Loading compiled contract…');
-      const artifact = await (await fetch(`build/${isToken ? 'TestUSDT' : 'Resole'}.json`)).json();
-      const signer = await signerOn(net);
-      const args = [];
-      if (!isToken) {
-        const input = document.getElementById('usdt-' + key);
-        const usdt = await checkToken(signer, input.value.trim());
-        if (usdt === ZERO && !confirm('No USDT address: this contract will be BOT-only forever. Continue?')) throw Object.assign(new Error('cancelled'), { code: 4001 });
-        args.push(usdt);
-      }
-      say(`Confirm the deployment to ${net.name} in MetaMask…`);
-      const contract = await new ethers.ContractFactory(artifact.abi, artifact.bytecode, signer).deploy(...args);
+      const artifact = await (await fetch('build/Resole.json')).json();
+      say('Connecting to MetaMask…');
+      await ethereum.request({ method: 'eth_requestAccounts' });
+      await switchToBotChain();
+      const signer = await new ethers.BrowserProvider(ethereum).getSigner();
+      if (Number((await signer.provider.getNetwork()).chainId) !== NET.chainId) throw new Error('MetaMask is not on BOT Chain mainnet (677). Nothing was deployed.');
+      say('Confirm the deployment to BOT Chain mainnet in MetaMask…');
+      const contract = await new ethers.ContractFactory(artifact.abi, artifact.bytecode, signer).deploy();
       const tx = contract.deploymentTransaction();
-      say('Waiting for confirmation… ', link(`${net.explorer}/tx/${tx.hash}`, 'view transaction'));
+      say('Waiting for confirmation… ', link(`${NET.explorer}/tx/${tx.hash}`, 'view transaction'));
       const receipt = await tx.wait();
       const address = await contract.getAddress();
-      if (isToken) {
-        document.getElementById('usdt-testnet').value = address;
-        const mint = await new ethers.Contract(address, artifact.abi, signer).faucet(ethers.parseUnits('1000', 6));
-        say('Test USDT deployed at ', link(`${net.explorer}/address/${address}`, address), '. Confirm a mint of 1,000 tUSDT to your wallet…');
-        await mint.wait();
-        say('Test USDT deployed at ', link(`${net.explorer}/address/${address}`, address), ' and 1,000 tUSDT minted to you.\nAnyone can mint more with faucet(amount) from the explorer. Now deploy Resole to testnet.');
-        return;
-      }
-      try { localStorage.setItem('resole.contract.' + net.chainId, address); } catch { /* ignore */ }
-      say(`Resole deployed to ${net.name}:\n`, link(`${net.explorer}/address/${address}`, address),
-        `\nBlock: ${receipt.blockNumber} (use as fromBlock)\nUSDT: ${args[0] === ZERO ? 'none (BOT-only)' : args[0]}\n\nNext: `,
-        link('./' + (key === 'testnet' ? '?net=testnet' : ''), 'open the app'), ' and list a cheap demo item.');
+      try { localStorage.setItem('resole.contract.' + NET.chainId, address); } catch { /* ignore */ }
+      say('Resole deployed to BOT Chain mainnet:\n', link(`${NET.explorer}/address/${address}`, address),
+        `\nBlock: ${receipt.blockNumber} (use as fromBlock)\n\nNext: `, link('./', 'open the app'), ' and list a cheap demo item.');
     } catch (e) {
       console.error(e);
       const cancelled = e.code === 4001 || e.code === 'ACTION_REJECTED';
       say(cancelled ? 'Cancelled. Nothing was deployed.' : `Deployment failed: ${e.shortMessage || e.message}`);
     } finally {
-      buttons.forEach((b) => (b.disabled = false));
+      button.disabled = false;
     }
   }
 
-  buttons.forEach((b) => b.addEventListener('click', () => run(b)));
+  button.addEventListener('click', deploy);
 })();
 </script>
 </body>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Resole · Second-hand shoes &amp; apparel on BOT Chain</title>
-<meta name="description" content="Sell your second-hand shoes and apparel. Set your own price in BOT or USDT, get paid on-chain, and every sale lives on BOT Chain forever.">
+<meta name="description" content="Sell your second-hand shoes and apparel. Set your own price in BOT, get paid on-chain, and every sale lives on BOT Chain forever.">
 <meta name="theme-color" content="#000000">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23000'/%3E%3Cpath d='M16 4c5 0 8.5 3.6 8.5 9 0 3.6-1.8 5.5-1.8 8.2 0 2.6.8 3.4.8 5.3 0 2.2-2.6 3.5-7.5 3.5s-7.5-1.3-7.5-3.5c0-1.9.8-2.7.8-5.3 0-2.7-1.8-4.6-1.8-8.2C7.5 7.6 11 4 16 4z' fill='%23EF6A4C'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -156,7 +156,6 @@
   .cap { font: 500 11px/1.3 var(--mono); letter-spacing: .04em; color: var(--muted); text-transform: uppercase; }
   .price { font: 700 15px/1 var(--mono); white-space: nowrap; }
   .price .cur { font-size: 10px; letter-spacing: .1em; padding: 3px 5px; border-radius: 5px; margin-left: 5px; vertical-align: 2px; border: 1px solid var(--border); color: var(--muted); }
-  .price .cur.usdt { color: var(--green); border-color: rgba(61,220,132,.35); }
   .price .cur.bot { color: var(--coral); border-color: rgba(239,106,76,.4); }
   .sold .media img { filter: grayscale(1) brightness(.62); }
   .sold .media::after { content: ''; position: absolute; inset: 0; background: rgba(70, 30, 28, .28); }
@@ -199,10 +198,6 @@
   .contact small { color: var(--muted); letter-spacing: .1em; font-size: 10px; display: block; margin-bottom: 3px; }
   .bigprice { font: 700 34px/1 var(--mono); margin: 4px 0 16px; }
   .bigprice .cur { font-size: 14px; vertical-align: 6px; }
-  .steps { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font: 700 11px/1 var(--mono); letter-spacing: .08em; color: var(--muted); }
-  .steps span { padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border); }
-  .steps .on { color: #140702; background: var(--coral); border-color: var(--coral); }
-  .steps .done { color: var(--green); border-color: rgba(61,220,132,.4); }
   .status { margin-top: 10px; font: 500 12px/1.45 var(--mono); color: var(--muted); }
   .status.err { color: var(--danger); }
   .status.ok { color: var(--green); }
@@ -361,7 +356,7 @@
   <div class="wrap">
     <a class="logo" href="#/" aria-label="Resole home">
       <svg viewBox="0 0 24 32" aria-hidden="true"><path d="M12 1c5 0 9 3.8 9 9.6 0 3.9-2 6-2 8.9 0 2.8.9 3.7.9 5.8 0 2.4-2.8 3.8-7.9 3.8s-7.9-1.4-7.9-3.8c0-2.1.9-3 .9-5.8 0-2.9-2-5-2-8.9C3 4.8 7 1 12 1z" fill="#EF6A4C"/><path d="M7.5 8.5h9M7 12h10M8.5 23.5h7M9 26.5h6" stroke="#000" stroke-width="1.6" stroke-linecap="round" opacity=".55"/></svg>
-      RESOLE<small id="net-badge" hidden>TESTNET</small>
+      RESOLE
     </a>
     <div class="spacer"></div>
     <div class="head-links" id="head-links"></div>
@@ -387,8 +382,8 @@
   const CONFIG = {
     networks: {
       // `contract` is the single source for the app, the footer card and the explorer link.
+      // The contract only deploys on BOT Chain mainnet (677), so there is no testnet entry.
       mainnet: { chainId: 677, name: 'BOT Chain', rpc: 'https://rpc.botchain.ai', explorer: 'https://scan.botchain.ai', contract: '', fromBlock: 0 },
-      testnet: { chainId: 968, name: 'BOT Chain Testnet', rpc: 'https://rpc.bohr.life', explorer: 'https://scan.bohr.life', contract: '', fromBlock: 0 },
     },
     // Photo upload Worker (worker/), e.g. 'https://resole-upload.<account>.workers.dev/upload'.
     uploadUrl: '',
@@ -396,22 +391,20 @@
     ipfsGateway: 'https://gateway.pinata.cloud/ipfs/',
     ipfsFallback: 'https://ipfs.io/ipfs/',
   };
-  // The USDT token is read from the deployed contract (usdt()). If it is the zero address the app runs BOT-only.
+  // Prices are in BOT only (18 decimals).
 
   const KINDS = ['Shoes', 'Apparel'];
   const CONDITIONS = ['New', 'Like new', 'Good', 'Worn'];
-  const CURRENCIES = ['BOT', 'USDT'];
   const LIMITS = { name: 32, contact: 64, title: 80, size: 16, description: 500, photos: 3 };
   const MAX_FILE = 5 * 1024 * 1024;
   const OUT_SIDE = 1200;
   const ZERO = '0x0000000000000000000000000000000000000000';
 
-  const ITEM_TUPLE = 'tuple(address seller, string title, uint8 kind, string size, uint8 condition, string[] photos, string description, uint8 currency, uint256 price, address buyer, uint64 listedAt, uint64 soldAt)';
+  const ITEM_TUPLE = 'tuple(address seller, string title, uint8 kind, string size, uint8 condition, string[] photos, string description, uint256 price, address buyer, uint64 listedAt, uint64 soldAt)';
   const ABI = [
-    'function usdt() view returns (address)',
     'function profiles(address) view returns (bool exists, string name, string contact)',
     'function setProfile(string name, string contact)',
-    'function list(string title, uint8 kind, string size, uint8 condition, string[] photos, string description, uint8 currency, uint256 price) returns (uint256 id)',
+    'function list(string title, uint8 kind, string size, uint8 condition, string[] photos, string description, uint256 price) returns (uint256 id)',
     'function buy(uint256 id) payable',
     `function getItem(uint256 id) view returns (${ITEM_TUPLE})`,
     `function getItems(uint256 start, uint256 count) view returns (${ITEM_TUPLE}[])`,
@@ -419,17 +412,11 @@
     'function itemsOf(address seller) view returns (uint256[])',
     'function purchasesOf(address buyer) view returns (uint256[])',
     'event ProfileSet(address indexed user, string name)',
-    'event Listed(uint256 indexed id, address indexed seller, uint8 currency, uint256 price)',
-    'event Sold(uint256 indexed id, address indexed buyer, address indexed seller, uint8 currency, uint256 price)',
+    'event Listed(uint256 indexed id, address indexed seller, uint256 price)',
+    'event Sold(uint256 indexed id, address indexed buyer, address indexed seller, uint256 price)',
     'error EmptyName()', 'error TextTooLong()', 'error NoProfile()', 'error EmptyTitle()', 'error EmptySize()',
-    'error BadCondition()', 'error BadPhotoCount()', 'error EmptyPhoto()', 'error ZeroPrice()', 'error UsdtDisabled()',
-    'error ItemNotFound()', 'error AlreadySold()', 'error OwnItem()', 'error WrongAmount()', 'error PaymentFailed()',
-  ];
-  const ERC20 = [
-    'function decimals() view returns (uint8)',
-    'function balanceOf(address) view returns (uint256)',
-    'function allowance(address owner, address spender) view returns (uint256)',
-    'function approve(address spender, uint256 amount) returns (bool)',
+    'error BadCondition()', 'error BadPhotoCount()', 'error EmptyPhoto()', 'error ZeroPrice()',
+    'error ItemNotFound()', 'error AlreadySold()', 'error OwnItem()', 'error WrongAmount()', 'error PaymentFailed()', 'error WrongChain()',
   ];
   const REVERTS = {
     EmptyName: 'Add a display name.',
@@ -441,12 +428,12 @@
     BadPhotoCount: 'Add 1 to 3 photos.',
     EmptyPhoto: 'A photo is missing. Upload it again.',
     ZeroPrice: 'Set a price above zero.',
-    UsdtDisabled: 'USDT is not available on this contract. Price it in BOT.',
     ItemNotFound: 'Item not found.',
     AlreadySold: 'Just sold — too late! No money was taken.',
     OwnItem: 'That is your own listing.',
     WrongAmount: 'The amount did not match the price. Nothing was sent.',
     PaymentFailed: "The seller's wallet could not receive BOT. Nothing was sent.",
+    WrongChain: 'Resole only runs on BOT Chain mainnet (chain ID 677).',
   };
 
   // ============================================================
@@ -463,8 +450,7 @@
 
   const params = new URLSearchParams(location.search);
   const isLocal = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
-  const netKey = params.get('net') === 'testnet' ? 'testnet' : 'mainnet';
-  const NET = { ...CONFIG.networks[netKey] };
+  const NET = { ...CONFIG.networks.mainnet };
   // On localhost, pick up an address deployed from deploy.html so it can be tried before editing CONFIG.
   if (!NET.contract && isLocal) NET.contract = storage('resole.contract.' + NET.chainId) || '';
   const MAINNET = { ...CONFIG.networks.mainnet };
@@ -478,9 +464,8 @@
     me: null, // the connected wallet's profile, or null
     mode: storage('resole.mode') === 'selling' ? 'selling' : 'buying',
     items: [], profiles: new Map(), loaded: false, loading: false, loadError: null,
-    usdt: { enabled: false, address: ZERO, decimals: 6 },
     kind: 'all', status: 'all', dropsOpen: true,
-    buy: null, // { id, step, error, approved }
+    buy: null, // { id, step, error, hash }
     hashes: {}, // 'list:<id>' / 'sold:<id>' → tx hash from this session
     tab: 'listings', sub: 'available',
   };
@@ -508,15 +493,14 @@
   const extLink = (href, text, cls = 'ext') => h('a', { href, target: '_blank', rel: 'noopener', class: cls }, text);
   const txLink = (hash, text = 'View tx ↗') => (hash && !hash.startsWith('preview') ? extLink(`${NET.explorer}/tx/${hash}`, text) : h('span', { class: 'muted' }, PREVIEW ? 'preview tx' : ''));
   const addrLink = (a) => extLink(`${NET.explorer}/address/${a}`, short(a));
-  const decimalsOf = (currency) => (currency === 1 ? state.usdt.decimals : 18);
-  function fmtAmount(value, currency) {
-    const s = ethers.formatUnits(value, decimalsOf(currency));
+  function fmtAmount(value) {
+    const s = ethers.formatEther(value);
     const [i, f = ''] = s.split('.');
     const frac = f.replace(/0+$/, '').slice(0, 6);
     return Number(i).toLocaleString('en-US') + (frac ? '.' + frac : '');
   }
-  const priceLabel = (item) => `${fmtAmount(item.price, item.currency)} ${CURRENCIES[item.currency]}`;
-  const priceEl = (item, cls = 'price') => h('span', { class: cls }, fmtAmount(item.price, item.currency), h('span', { class: 'cur ' + CURRENCIES[item.currency].toLowerCase() }, CURRENCIES[item.currency]));
+  const priceLabel = (item) => `${fmtAmount(item.price)} BOT`;
+  const priceEl = (item, cls = 'price') => h('span', { class: cls }, fmtAmount(item.price), h('span', { class: 'cur bot' }, 'BOT'));
   const caption = (item) => `[SIZE ${item.size} · ${CONDITIONS[item.condition] || '—'}]`.toUpperCase();
   const isMine = (item) => same(item.seller, state.account);
   const isSold = (item) => item.buyer && item.buyer !== ZERO;
@@ -585,7 +569,7 @@
     return {
       id, seller: ethers.getAddress(r.seller), title: r.title, kind: Number(r.kind), size: r.size,
       condition: Number(r.condition), photos: [...r.photos], description: r.description,
-      currency: Number(r.currency), price: BigInt(r.price), buyer: r.buyer === ZERO ? ZERO : ethers.getAddress(r.buyer),
+      price: BigInt(r.price), buyer: r.buyer === ZERO ? ZERO : ethers.getAddress(r.buyer),
       listedAt: Number(r.listedAt), soldAt: Number(r.soldAt),
     };
   }
@@ -595,11 +579,6 @@
     async init() {
       rpc = new ethers.JsonRpcProvider(NET.rpc, NET.chainId, { staticNetwork: true });
       reader = new ethers.Contract(NET.contract, ABI, rpc);
-      const token = await reader.usdt();
-      if (token !== ZERO) {
-        const decimals = Number(await new ethers.Contract(token, ERC20, rpc).decimals());
-        state.usdt = { enabled: true, address: token, decimals };
-      }
     },
     async items() {
       const total = Number(await reader.total());
@@ -621,15 +600,7 @@
       return p.exists ? { name: p.name, contact: p.contact } : null;
     },
     async balances(addr) {
-      const [bot, usdt] = await Promise.all([
-        rpc.getBalance(addr),
-        state.usdt.enabled ? new ethers.Contract(state.usdt.address, ERC20, rpc).balanceOf(addr) : 0n,
-      ]);
-      return { bot, usdt };
-    },
-    async allowance(addr) {
-      if (!state.usdt.enabled) return 0n;
-      return new ethers.Contract(state.usdt.address, ERC20, rpc).allowance(addr, NET.contract);
+      return { bot: await rpc.getBalance(addr) };
     },
     async writer() {
       const signer = await new ethers.BrowserProvider(window.ethereum).getSigner();
@@ -645,30 +616,16 @@
     async list(f, onStep) {
       const { contract } = await this.writer();
       onStep('sign');
-      const tx = await contract.list(f.title, f.kind, f.size, f.condition, f.photos, f.description, f.currency, f.price);
+      const tx = await contract.list(f.title, f.kind, f.size, f.condition, f.photos, f.description, f.price);
       onStep('confirm', tx.hash);
       const receipt = await tx.wait();
       const log = receipt.logs.map((l) => { try { return contract.interface.parseLog(l); } catch { return null; } }).find((l) => l?.name === 'Listed');
       return { hash: tx.hash, id: log ? Number(log.args.id) : null };
     },
     async buy(item, onStep) {
-      const { signer, contract } = await this.writer();
-      if (item.currency === 0) {
-        onStep('buy');
-        const tx = await contract.buy(item.id, { value: item.price });
-        onStep('confirm', tx.hash);
-        await tx.wait();
-        return tx.hash;
-      }
-      const token = new ethers.Contract(state.usdt.address, ERC20, signer);
-      if ((await this.allowance(state.account)) < item.price) {
-        onStep('approve');
-        const ok = await token.approve(NET.contract, item.price);
-        onStep('approving', ok.hash);
-        await ok.wait();
-      }
+      const { contract } = await this.writer();
       onStep('buy');
-      const tx = await contract.buy(item.id);
+      const tx = await contract.buy(item.id, { value: item.price });
       onStep('confirm', tx.hash);
       await tx.wait();
       return tx.hash;
@@ -685,35 +642,35 @@
     { address: '0x5E11000000000000000000000000000000000C03', name: 'Second Lap', contact: '' },
   ];
   const DEMO_ITEMS = [
-    // [seller, title, kind, size, condition, photo, currency, price, hoursAgo, soldTo]
-    [0, 'White Leather Sneakers', 0, '42', 1, '19-white-leather-sneakers', 0, '120', 3],
-    [1, 'Windbreaker Jacket', 1, 'L', 1, '07-black-white-windbreaker-jacket', 1, '40', 5],
-    [2, 'Silver Running Shoes', 0, '44', 1, '27-silver-grey-running-shoes', 0, '150', 9],
-    [0, 'Cream Chunky Sneakers', 0, '39', 2, '20-cream-chunky-sneakers', 1, '25', 14],
-    [1, 'Camel Wrap Coat', 1, 'M', 2, '06-camel-wrap-coat', 0, '300', 20, 2],
-    [2, 'Black Chelsea Boots', 0, '41', 3, '21-black-chelsea-boots', 0, '80', 30, 1],
-    [1, 'Oatmeal Knit Jumper', 1, 'S', 3, '05-oatmeal-knit-jumper', 1, '12', 34],
-    [0, 'Red Rain Boots', 0, '38', 0, '22-red-rain-boots', 1, '18', 40],
-    [2, 'Straight-Leg Jeans', 1, 'W30', 2, '12-dark-indigo-straight-leg-jeans', 1, '22', 52],
-    [1, 'Chestnut Penny Loafers', 0, '43', 2, '25-chestnut-penny-loafers', 1, '35', 60],
-    [0, 'Graphic Tee', 1, 'M', 0, '04-white-red-graphic-tee', 0, '60', 75],
-    [2, 'Tan Leather Sandals', 0, '40', 1, '26-tan-leather-sandals', 1, '15', 90, 0],
-    [1, 'Pointed Slingbacks', 0, '38', 2, '24-black-pointed-slingbacks', 0, '90', 110],
-    [2, 'Lavender Cargo Joggers', 1, 'M', 1, '13-lavender-cargo-joggers', 1, '18', 130],
+    // [seller, title, kind, size, condition, photo, price in BOT, hoursAgo, soldTo]
+    [0, 'White Leather Sneakers', 0, '42', 1, '19-white-leather-sneakers', '120', 3],
+    [1, 'Windbreaker Jacket', 1, 'L', 1, '07-black-white-windbreaker-jacket', '160', 5],
+    [2, 'Silver Running Shoes', 0, '44', 1, '27-silver-grey-running-shoes', '150', 9],
+    [0, 'Cream Chunky Sneakers', 0, '39', 2, '20-cream-chunky-sneakers', '100', 14],
+    [1, 'Camel Wrap Coat', 1, 'M', 2, '06-camel-wrap-coat', '300', 20, 2],
+    [2, 'Black Chelsea Boots', 0, '41', 3, '21-black-chelsea-boots', '80', 30, 1],
+    [1, 'Oatmeal Knit Jumper', 1, 'S', 3, '05-oatmeal-knit-jumper', '48', 34],
+    [0, 'Red Rain Boots', 0, '38', 0, '22-red-rain-boots', '72', 40],
+    [2, 'Straight-Leg Jeans', 1, 'W30', 2, '12-dark-indigo-straight-leg-jeans', '88', 52],
+    [1, 'Chestnut Penny Loafers', 0, '43', 2, '25-chestnut-penny-loafers', '140', 60],
+    [0, 'Graphic Tee', 1, 'M', 0, '04-white-red-graphic-tee', '60', 75],
+    [2, 'Tan Leather Sandals', 0, '40', 1, '26-tan-leather-sandals', '60', 90, 0],
+    [1, 'Pointed Slingbacks', 0, '38', 2, '24-black-pointed-slingbacks', '90', 110],
+    [2, 'Lavender Cargo Joggers', 1, 'M', 1, '13-lavender-cargo-joggers', '72', 130],
   ];
   const previewStore = {
-    key: `resole.preview.${NET.chainId}.v1`,
+    key: `resole.preview.${NET.chainId}.v2`,
     seed() {
       const now = Math.floor(Date.now() / 1000);
       const profiles = Object.fromEntries(DEMO_SELLERS.map((s) => [s.address.toLowerCase(), { name: s.name, contact: s.contact }]));
-      const items = DEMO_ITEMS.map(([s, title, kind, size, condition, img, currency, price, hours, soldTo]) => ({
+      const items = DEMO_ITEMS.map(([s, title, kind, size, condition, img, price, hours, soldTo]) => ({
         seller: DEMO_SELLERS[s].address, title, kind, size, condition, photos: [`images/demo/${img}.jpg`],
-        description: 'Demo listing for preview mode. Photo: Unsplash.', currency,
-        price: ethers.parseUnits(price, currency === 1 ? 6 : 18).toString(),
+        description: 'Demo listing for preview mode. Photo: Unsplash.',
+        price: ethers.parseEther(price).toString(),
         buyer: soldTo != null ? DEMO_SELLERS[soldTo].address : ZERO,
         listedAt: now - hours * 3600, soldAt: soldTo != null ? now - Math.floor(hours / 2) * 3600 : 0,
       }));
-      return { profiles, items, balances: {}, allowances: {}, sales: {} };
+      return { profiles, items, balances: {}, sales: {} };
     },
     read() {
       try { const d = JSON.parse(storage(this.key)); if (d && Array.isArray(d.items)) return d; } catch { /* reseed */ }
@@ -722,15 +679,13 @@
     write(d) {
       if (!storage(this.key, JSON.stringify(d))) throw friendly("This browser's preview storage is full. Open the site with ?reset to start over.");
     },
-    async init() { state.usdt = { enabled: true, address: '0x0000000000000000000000000000000000005d17', decimals: 6 }; },
+    async init() {},
     async items() { return this.read().items.map((r, i) => normItem(r, i)); },
     async item(id) { const r = this.read().items[id]; return r ? normItem(r, id) : null; },
     async profile(addr) { return this.read().profiles[addr.toLowerCase()] || null; },
     async balances(addr) {
-      const b = this.read().balances[addr.toLowerCase()] || { bot: ethers.parseEther('1000').toString(), usdt: ethers.parseUnits('500', 6).toString() };
-      return { bot: BigInt(b.bot), usdt: BigInt(b.usdt) };
+      return { bot: BigInt(this.read().balances[addr.toLowerCase()] ?? ethers.parseEther('1000').toString()) };
     },
-    async allowance(addr) { return BigInt(this.read().allowances[addr.toLowerCase()] || 0); },
     fakeHash: () => 'preview' + Math.random().toString(16).slice(2),
     pause: () => new Promise((r) => setTimeout(r, 700)),
     async setProfile(name, contact) {
@@ -745,17 +700,12 @@
       const hash = this.fakeHash();
       onStep('confirm', hash); await this.pause();
       const d = this.read();
-      d.items.push({ seller: state.account, title: f.title, kind: f.kind, size: f.size, condition: f.condition, photos: f.photos, description: f.description, currency: f.currency, price: f.price.toString(), buyer: ZERO, listedAt: Math.floor(Date.now() / 1000), soldAt: 0 });
+      d.items.push({ seller: state.account, title: f.title, kind: f.kind, size: f.size, condition: f.condition, photos: f.photos, description: f.description, price: f.price.toString(), buyer: ZERO, listedAt: Math.floor(Date.now() / 1000), soldAt: 0 });
       this.write(d);
       return { hash, id: d.items.length - 1 };
     },
     async buy(item, onStep) {
       const me = state.account.toLowerCase();
-      if (item.currency === 1 && (await this.allowance(me)) < item.price) {
-        onStep('approve'); await this.pause();
-        onStep('approving', this.fakeHash()); await this.pause();
-        const d = this.read(); d.allowances[me] = item.price.toString(); this.write(d);
-      }
       onStep('buy'); await this.pause();
       const hash = this.fakeHash();
       onStep('confirm', hash); await this.pause();
@@ -764,8 +714,7 @@
       if (r.buyer !== ZERO) throw Object.assign(new Error('AlreadySold'), { revert: { name: 'AlreadySold' } });
       r.buyer = state.account; r.soldAt = Math.floor(Date.now() / 1000);
       const bal = await this.balances(me);
-      if (item.currency === 0) bal.bot -= item.price; else { bal.usdt -= item.price; d.allowances[me] = '0'; }
-      d.balances[me] = { bot: bal.bot.toString(), usdt: bal.usdt.toString() };
+      d.balances[me] = (bal.bot - item.price).toString();
       d.sales[item.id] = hash;
       this.write(d);
       return hash;
@@ -1053,8 +1002,8 @@
           ? h('h2', {}, 'Your old pair,', h('em', {}, 'someone’s next.'))
           : h('h2', {}, 'Second-hand.', h('em', {}, 'First-class.')),
         h('p', {}, selling
-          ? 'Snap 1–3 photos, set your own price in BOT or USDT, and get paid straight to your wallet. No platform fee, ever.'
-          : 'Pre-loved shoes and apparel, priced by their owners. Pay in BOT or USDT and the money lands straight in the seller’s wallet.'),
+          ? 'Snap 1–3 photos, set your own price in BOT, and get paid straight to your wallet. No platform fee, ever.'
+          : 'Pre-loved shoes and apparel, priced by their owners. Pay in BOT and the money lands straight in the seller’s wallet.'),
         h('div', { class: 'ctas' },
           selling
             ? [h('button', { class: 'btn coral big', type: 'button', onclick: sellNow }, 'Start selling'), h('button', { class: 'btn ghost big', type: 'button', onclick: shopNow }, 'Start shopping')]
@@ -1169,31 +1118,20 @@
 
     const b = state.buy?.id === item.id ? state.buy : { id: item.id, step: 'idle' };
     const busy = !['idle', 'error'].includes(b.step);
-    const usdt = item.currency === 1;
     const label = {
       idle: `Buy for ${priceLabel(item)}`,
       error: `Buy for ${priceLabel(item)}`,
       checking: 'Checking…',
-      approve: '1/2 · Approve USDT in MetaMask…',
-      approving: '1/2 · Approving USDT…',
-      buy: (usdt ? '2/2 · ' : '') + 'Confirm in MetaMask…',
-      confirm: (usdt ? '2/2 · ' : '') + `Buying on ${NET.name}…`,
+      buy: 'Confirm in MetaMask…',
+      confirm: `Buying on ${NET.name}…`,
     }[b.step];
-    const approvedDone = b.approved || ['buy', 'confirm'].includes(b.step);
-    const stepper = usdt && h('div', { class: 'steps', 'aria-label': 'USDT takes two steps' },
-      h('span', { class: ['approve', 'approving'].includes(b.step) ? 'on' : approvedDone ? 'done' : '' }, (approvedDone ? '✓ ' : '') + '1/2 Approve'),
-      h('span', { 'aria-hidden': 'true' }, '→'),
-      h('span', { class: ['buy', 'confirm'].includes(b.step) ? 'on' : '' }, '2/2 Buy'));
     const needs = wrongNetwork();
     return h('div', {},
-      stepper,
       needs ? h('button', { class: 'btn coral big block', type: 'button', onclick: switchNow }, 'Switch to BOT Chain')
         : h('button', { class: 'btn coral big block', type: 'button', disabled: busy, onclick: () => buyItem(item.id) }, label),
       b.error && h('div', { class: 'status err', role: 'alert' }, b.error),
       b.hash && busy && h('div', { class: 'status' }, txLink(b.hash, 'Pending tx ↗')),
-      !b.error && !busy && h('div', { class: 'status' }, usdt
-        ? 'Paying in USDT takes two MetaMask steps: approve, then buy. You need a little BOT for gas.'
-        : 'One MetaMask transaction for the exact amount, plus a little BOT for gas.'));
+      !b.error && !busy && h('div', { class: 'status' }, 'One MetaMask transaction for the exact amount, plus a little BOT for gas.'));
   }
 
   const saleTxCache = new Map();
@@ -1231,12 +1169,10 @@
         return refresh({ quiet: true });
       }
       if (isMine(item)) return setBuy({ step: 'idle' });
-      const [bal, allowance] = await Promise.all([store.balances(state.account), item.currency === 1 ? store.allowance(state.account) : 0n]);
-      const need = `You need ${priceLabel(item)} + a little BOT for gas.`;
-      if (item.currency === 0 ? bal.bot <= item.price : bal.usdt < item.price || bal.bot === 0n) return setBuy({ step: 'error', error: need });
-      setBuy({ approved: item.currency === 1 && allowance >= item.price });
+      const bal = await store.balances(state.account);
+      if (bal.bot <= item.price) return setBuy({ step: 'error', error: `You need ${priceLabel(item)} + a little BOT for gas.` });
 
-      const hash = await store.buy(item, (step, txHash) => setBuy({ step, hash: txHash || null, ...(step === 'buy' ? { approved: true } : {}) }));
+      const hash = await store.buy(item, (step, txHash) => setBuy({ step, hash: txHash || null }));
       state.hashes['sold:' + id] = hash;
       state.buy = null;
       go(`#/bought/${id}`);
@@ -1329,13 +1265,13 @@
   // ---------- sell ----------
   const draft = {
     photos: [], // { blob, url, cid, error, uploading }
-    title: '', kind: 0, size: '', condition: 1, description: '', price: '', currency: 0,
+    title: '', kind: 0, size: '', condition: 1, description: '', price: '',
     stage: 'form', // form → confirm → working
     agreed: false, errors: {}, progress: null,
   };
   function resetDraft() {
     draft.photos.forEach((p) => URL.revokeObjectURL(p.url));
-    Object.assign(draft, { photos: [], title: '', kind: 0, size: '', condition: 1, description: '', price: '', currency: 0, stage: 'form', agreed: false, errors: {}, progress: null });
+    Object.assign(draft, { photos: [], title: '', kind: 0, size: '', condition: 1, description: '', price: '', stage: 'form', agreed: false, errors: {}, progress: null });
   }
 
   function validateDraft() {
@@ -1347,16 +1283,15 @@
     if (!draft.size.trim()) e.size = 'Add a size, e.g. 42, US 9 or M.';
     else if (bytes(draft.size.trim()) > LIMITS.size) e.size = `Keep it under ${LIMITS.size} characters.`;
     if (bytes(draft.description) > LIMITS.description) e.description = `Keep it under ${LIMITS.description} characters.`;
-    const dec = decimalsOf(draft.currency);
+    const dec = 18;
     const m = /^(\d+)(?:\.(\d+))?$/.exec(draft.price.trim());
     if (!m) e.price = 'Enter a price, e.g. 25 or 12.5.';
     else if ((m[2] || '').length > dec) e.price = `Use at most ${dec} decimals.`;
-    else if (ethers.parseUnits(draft.price.trim(), dec) === 0n) e.price = 'Set a price above zero.';
-    if (draft.currency === 1 && !state.usdt.enabled) e.price = 'USDT is not available. Price it in BOT.';
+    else if (ethers.parseEther(draft.price.trim()) === 0n) e.price = 'Set a price above zero.';
     draft.errors = e;
     return !Object.keys(e).length;
   }
-  const draftPrice = () => ethers.parseUnits(draft.price.trim(), decimalsOf(draft.currency));
+  const draftPrice = () => ethers.parseEther(draft.price.trim());
 
   function sellView() {
     if (!state.account || !state.me) {
@@ -1400,7 +1335,7 @@
       try { price = /^\d+(\.\d+)?$/.test(draft.price.trim()) ? draftPrice() : 0n; } catch { price = 0n; }
       const fake = {
         id: -1, seller: state.account, title: draft.title.trim() || 'Your item title', kind: draft.kind, size: draft.size.trim() || '—',
-        condition: draft.condition, photos: [], currency: draft.currency, price, buyer: ZERO, listedAt: Date.now() / 1000,
+        condition: draft.condition, photos: [], price, buyer: ZERO, listedAt: Date.now() / 1000,
       };
       const c = card(fake);
       c.removeAttribute('href');
@@ -1413,7 +1348,7 @@
     return [
       h('a', { class: 'back', href: '#/' }, '← Back to shop'),
       h('h1', { class: 'page-title' }, 'Sell an item'),
-      h('p', { class: 'muted', style: 'margin:0 0 24px' }, 'You set the price. Buyers pay you directly in BOT or USDT. No platform fee.'),
+      h('p', { class: 'muted', style: 'margin:0 0 24px' }, 'You set the price in BOT. Buyers pay you directly. No platform fee.'),
       h('div', { class: 'sell' },
         h('form', { class: 'form', novalidate: true, onsubmit: (e) => { e.preventDefault(); if (validateDraft()) { draft.stage = 'confirm'; draft.agreed = false; } render(); window.scrollTo({ top: 0 }); } },
           h('div', { class: 'f' }, h('span', { class: 'lbl' }, 'Photos (1–3)', h('span', {}, `${draft.photos.length}/3`)), h('div', { class: 'photos' }, slots), fileInput,
@@ -1427,7 +1362,7 @@
           h('div', { class: 'f' }, h('span', { class: 'lbl' }, 'Your price'),
             h('div', { class: 'price-row' },
               h('input', { type: 'text', inputmode: 'decimal', value: draft.price, placeholder: '0', 'aria-label': 'Price', autocomplete: 'off', oninput: (e) => { draft.price = e.target.value.replace(',', '.'); updatePreview(); } }),
-              state.usdt.enabled ? opts('currency', CURRENCIES) : h('div', { class: 'opts' }, h('span', { class: 'chip-btn', 'aria-pressed': 'true', style: 'display:inline-flex;align-items:center' }, 'BOT'))),
+              h('div', { class: 'opts' }, h('span', { class: 'chip-btn', 'aria-pressed': 'true', style: 'display:inline-flex;align-items:center' }, 'BOT'))),
             err('price')),
           h('button', { class: 'btn coral big block', type: 'submit' }, 'Review listing')),
         h('aside', { class: 'preview-card' }, h('div', { class: 'lbl' }, 'Card preview'), previewSlot,
@@ -1440,7 +1375,7 @@
     const p = draft.progress || {};
     const fake = {
       id: -1, seller: state.account, title: draft.title.trim(), kind: draft.kind, size: draft.size.trim(),
-      condition: draft.condition, photos: [], currency: draft.currency, price: draftPrice(), buyer: ZERO, listedAt: Date.now() / 1000,
+      condition: draft.condition, photos: [], price: draftPrice(), buyer: ZERO, listedAt: Date.now() / 1000,
     };
     const c = card(fake);
     c.removeAttribute('href');
@@ -1462,7 +1397,7 @@
             h('h3', {}, 'This listing is permanent.'),
             h('p', {}, "Once on BOT Chain it can't be edited, removed or re-priced. Photos are pinned to IPFS and stay public."),
             h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: draft.agreed, disabled: working, onchange: (e) => { draft.agreed = e.target.checked; render(); } }),
-              h('span', {}, `I understand. List "${draft.title.trim()}" for ${fmtAmount(fake.price, fake.currency)} ${CURRENCIES[fake.currency]}, forever.`))),
+              h('span', {}, `I understand. List "${draft.title.trim()}" for ${fmtAmount(fake.price)} BOT, forever.`))),
           h('div', { class: 'panel', style: 'margin-top:12px' },
             h('div', { class: 'facts' },
               h('div', {}, h('small', {}, 'Size'), h('b', {}, fake.size)),
@@ -1521,7 +1456,7 @@
     try {
       const f = {
         title: draft.title.trim(), kind: draft.kind, size: draft.size.trim(), condition: draft.condition,
-        photos: draft.photos.map((ph) => ph.cid), description: draft.description.trim(), currency: draft.currency, price: draftPrice(),
+        photos: draft.photos.map((ph) => ph.cid), description: draft.description.trim(), price: draftPrice(),
       };
       const { hash, id } = await store.list(f, (chain, txHash) => { draft.progress = { ...draft.progress, chain, hash: txHash || draft.progress.hash }; render(); });
       draft.progress.chain = 'done';
@@ -1715,7 +1650,7 @@
       h('p', { class: 'muted', style: 'margin:0' }, 'Switch anytime from the header. Same wallet, both roles, no transaction.'),
       h('div', { class: 'modes' },
         h('button', { class: 'mode-card', type: 'button', onclick: () => pick('selling') }, h('span', { class: 'ico', 'aria-hidden': 'true' }, '🏷️'), h('div', {}, h('b', {}, "I'M SELLING"), h('br'), h('span', {}, 'List shoes and apparel at your price.'))),
-        h('button', { class: 'mode-card', type: 'button', onclick: () => pick('buying') }, h('span', { class: 'ico', 'aria-hidden': 'true' }, '👟'), h('div', {}, h('b', {}, "I'M BUYING"), h('br'), h('span', {}, 'Pay in BOT or USDT, straight to the seller.'))))));
+        h('button', { class: 'mode-card', type: 'button', onclick: () => pick('buying') }, h('span', { class: 'ico', 'aria-hidden': 'true' }, '👟'), h('div', {}, h('b', {}, "I'M BUYING"), h('br'), h('span', {}, 'Pay in BOT, straight to the seller.'))))));
   }
 
   // ============================================================
@@ -1734,9 +1669,8 @@
   }
 
   function boot() {
-    const line = ['<b>Every sale settled on BOT Chain.</b>', '<i>●</i>', '<b>Every sale final.</b>', '<i>●</i>', 'Peer-to-peer', '<i>●</i>', 'Zero platform fee', '<i>●</i>', 'Pay in BOT or USDT', '<i>●</i>'];
+    const line = ['<b>Every sale settled on BOT Chain.</b>', '<i>●</i>', '<b>Every sale final.</b>', '<i>●</i>', 'Peer-to-peer', '<i>●</i>', 'Zero platform fee', '<i>●</i>', 'Pay in BOT', '<i>●</i>'];
     $('announce').innerHTML = [...line, ...line, ...line, ...line].map((s) => `<span>${s}</span>`).join('');
-    if (netKey === 'testnet') $('net-badge').hidden = false;
     if (PREVIEW) {
       const bar = $('preview-bar');
       bar.hidden = false;

@@ -1,6 +1,6 @@
 # Resole
 
-Sell your second-hand shoes and apparel. Sellers upload photos and set their own price in BOT or USDT, buyers pay on-chain, and every listing and sale lives permanently on BOT Chain.
+Sell your second-hand shoes and apparel. Sellers upload photos and set their own price in BOT, buyers pay on-chain in BOT, and every listing and sale lives permanently on BOT Chain.
 
 *Peer-to-peer. No escrow, no refunds, no platform fee, no admin. Buyer and seller arrange delivery off-chain. Use cheap demo items when testing on mainnet.*
 
@@ -11,15 +11,11 @@ Sell your second-hand shoes and apparel. Sellers upload photos and set their own
 | Live site | _not published yet_ |
 | Upload Worker | _not deployed yet_ |
 | Contract (BOT Chain mainnet, chain ID 677) | _not deployed yet_ |
-| Contract (testnet, chain ID 968) | _not deployed yet_ |
-| USDT (mainnet) | [`0xaBabc7Ddc03e501d190C676BF3d92ef0e6e87a3C`](https://scan.botchain.ai/token/0xaBabc7Ddc03e501d190C676BF3d92ef0e6e87a3C) (Tether USD, 6 decimals, from the dex.botchain.ai token list) |
-| USDT (testnet) | [`0x75edC9335175Fc0552D51D48439F229c10420fe3`](https://scan.bohr.life/token/0x75edC9335175Fc0552D51D48439F229c10420fe3) |
 
 ## Project layout
 
 - `index.html`: the whole frontend (ethers.js v6 from CDN, no build step)
-- `contracts/Resole.sol`: the marketplace contract (Solidity ^0.8.20, OpenZeppelin `ReentrancyGuard` + `SafeERC20`)
-- `contracts/TestUSDT.sol`: a mintable 6-decimal token for testnet only
+- `contracts/Resole.sol`: the marketplace contract (Solidity ^0.8.20, OpenZeppelin `ReentrancyGuard`). BOT only, BOT Chain mainnet only.
 - `deploy.html`: one-click deploy from MetaMask
 - `build/`: compiled ABI and bytecode, plus standard JSON input for explorer verification
 - `worker/`: the photo upload Worker (Cloudflare, `POST /upload` → IPFS via Pinata)
@@ -36,22 +32,20 @@ Then open http://localhost:4606. Until a contract address is configured the site
 
 ## 1. Deploy the contract
 
-Compiled with Solidity 0.8.20, optimizer 200 runs, EVM `paris`. The constructor takes one argument: the USDT token address (`0x000…0` = BOT-only; the app then hides USDT).
+Compiled with Solidity 0.8.20, optimizer 200 runs, EVM `paris`. The constructor takes **no arguments**, and it reverts with `WrongChain()` on any chain other than BOT Chain mainnet (chain ID 677). Testnet deploys are therefore impossible by design, so test with the preview mode and cheap demo items on mainnet.
 
 1. Run the site locally and open http://localhost:4606/deploy.html in a browser with MetaMask.
-2. Testnet: the official testnet USDT is prefilled. If you have none, click **Deploy test USDT (968)**, which also mints you 1,000 tUSDT. Then click **Deploy Resole to Testnet** and try the app at http://localhost:4606/?net=testnet. On localhost the app picks up the address you just deployed.
-3. Mainnet: the official USDT is prefilled. Click **Deploy Resole to Mainnet**.
-4. Paste each address into the matching `contract: ''` field in `CONFIG.networks` near the top of the script in `index.html`, and set `fromBlock` to the deploy block that `deploy.html` prints. The app uses `fromBlock` to find "Sold" transactions, and the public RPC does not answer log queries over the whole chain. That one `contract` constant feeds the app, the footer card and the explorer link.
-5. Update the Status table above.
+2. Click **Deploy Resole to BOT Chain mainnet (677)**. MetaMask is switched to (or given) BOT Chain first.
+3. Paste the address into `contract: ''` in `CONFIG.networks.mainnet` near the top of the script in `index.html`, and set `fromBlock` to the deploy block that `deploy.html` prints. The app uses `fromBlock` to find "Sold" transactions, and the public RPC does not answer log queries over the whole chain. That one `contract` constant feeds the app, the footer card and the explorer link.
+4. Update the Status table above.
 
-Or use Remix: paste `contracts/Resole.sol` into https://remix.ethereum.org (it resolves the `@openzeppelin/contracts` imports; use 5.0.2), compile with 0.8.20 and EVM version `paris`, then deploy with *Injected Provider – MetaMask*, passing the USDT address.
+Or use Remix: paste `contracts/Resole.sol` into https://remix.ethereum.org (it resolves the `@openzeppelin/contracts` imports; use 5.0.2), compile with 0.8.20 and EVM version `paris`, switch MetaMask to BOT Chain mainnet, choose *Injected Provider – MetaMask*, select **Resole** and click **Deploy**. There is nothing to fill in.
 
 | Network | Chain ID | RPC | Explorer |
 |---|---|---|---|
-| Testnet | 968 | https://rpc.bohr.life | https://scan.bohr.life |
 | Mainnet | 677 | https://rpc.botchain.ai | https://scan.botchain.ai |
 
-To verify the source on the explorer, use "Standard JSON input" with `build/Resole.standard-input.json` (it includes the OpenZeppelin sources), compiler `v0.8.20+commit.a1b79de6`, and the USDT address as the constructor argument.
+To verify the source on the explorer, use "Standard JSON input" with `build/Resole.standard-input.json` (it includes the OpenZeppelin sources), and compiler `v0.8.20+commit.a1b79de6`. There are no constructor arguments.
 
 ## 2. Deploy the upload Worker
 
@@ -85,9 +79,9 @@ GitHub Pages serves the `gh-pages` branch, so publish with `git push origin main
 
 - **One wallet, both roles.** Selling / Buying is a mode in the app (saved in localStorage), not on-chain. Any wallet with a profile can list and buy.
 - **Profile:** `setProfile(name, contact)` is created once and can be updated later; old listings keep working. Name ≤ 32 bytes, contact ≤ 64. The app refuses anything that looks like a phone number.
-- **Listing:** `list(...)` needs a profile, 1–3 photo CIDs, a size, condition 0–3 (New · Like new · Good · Worn), price > 0, and USDT only if the contract has a token. There is no edit, delete, unlist or re-price function.
-- **Buying:** `buy(id)` needs a profile; blocks your own items and sold items; sets `buyer` and `soldAt` before any money moves, then sends BOT with `call` (exact `msg.value`) or pulls USDT with `SafeERC20.safeTransferFrom` straight to the seller. The contract never holds funds. USDT takes two transactions in the app: approve the exact price, then buy.
-- **Prices:** BOT uses 18 decimals; USDT decimals are read from the token (6 on BOT Chain).
+- **Listing:** `list(...)` needs a profile, 1–3 photo CIDs, a size, condition 0–3 (New · Like new · Good · Worn), and a price > 0 in BOT (wei). There is no edit, delete, unlist or re-price function.
+- **Buying:** `buy(id)` needs a profile; blocks your own items and sold items; sets `buyer` and `soldAt` before any money moves, then forwards exactly `msg.value == price` in BOT to the seller with `call`. The contract never holds funds. One MetaMask transaction per purchase.
+- **Prices:** BOT only, 18 decimals.
 - **Events:** `ProfileSet`, `Listed`, `Sold`. The app reads items in pages through `getItems(start, count)` and finds sale transactions from `Sold` logs.
 
 ## Tests
