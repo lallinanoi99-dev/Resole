@@ -94,12 +94,12 @@ contract Resole is ReentrancyGuard {
     // ------------------------------------------------------------------
 
     function list(
-        string calldata title,
+        string memory title,
         Kind kind,
-        string calldata size,
+        string memory size,
         uint8 condition,
-        string[] calldata photos,
-        string calldata description,
+        string[] memory photos,
+        string memory description,
         Currency currency,
         uint256 price
     ) external returns (uint256 id) {
