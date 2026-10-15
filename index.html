@@ -1,0 +1,1761 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Resole · Second-hand shoes &amp; apparel on BOT Chain</title>
+<meta name="description" content="Sell your second-hand shoes and apparel. Set your own price in BOT or USDT, get paid on-chain, and every sale lives on BOT Chain forever.">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23000'/%3E%3Cpath d='M16 4c5 0 8.5 3.6 8.5 9 0 3.6-1.8 5.5-1.8 8.2 0 2.6.8 3.4.8 5.3 0 2.2-2.6 3.5-7.5 3.5s-7.5-1.3-7.5-3.5c0-1.9.8-2.7.8-5.3 0-2.7-1.8-4.6-1.8-8.2C7.5 7.6 11 4 16 4z' fill='%23EF6A4C'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #000000;
+    --card-a: #111111;
+    --card-b: #1A1A1A;
+    --border: #2A2A2A;
+    --text: #FFFFFF;
+    --muted: #9A9A9A;
+    --coral: #EF6A4C;
+    --coral-soft: rgba(239, 106, 76, .14);
+    --green: #3DDC84;
+    --sold: #B7605A;
+    --danger: #FF7A6B;
+    --sans: 'Inter Tight', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --radius: 18px;
+    --gutter: 16px;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; }
+  img { display: block; max-width: 100%; }
+  .mono { font-family: var(--mono); text-transform: uppercase; letter-spacing: .04em; }
+  .muted { color: var(--muted); }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 var(--gutter); }
+  [hidden] { display: none !important; }
+  :focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
+
+  /* ---------- announcement + header ---------- */
+  .announce { border-bottom: 1px solid var(--border); font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); overflow: hidden; white-space: nowrap; }
+  .announce .track { display: inline-flex; gap: 48px; padding: 10px 0; animation: marquee 38s linear infinite; }
+  .announce b { color: var(--text); font-weight: 500; }
+  .announce i { font-style: normal; color: var(--coral); }
+  @keyframes marquee { to { transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) { .announce .track { animation: none; } }
+  .preview-bar { background: var(--coral-soft); color: #FFC7B8; font: 500 11px/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; text-align: center; padding: 8px var(--gutter); }
+
+  header.top { position: sticky; top: 0; z-index: 30; background: rgba(0, 0, 0, .82); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid #141414; }
+  header.top .wrap { display: flex; align-items: center; gap: 12px; height: 64px; }
+  .logo { display: inline-flex; align-items: center; gap: 9px; font-weight: 800; font-size: 21px; letter-spacing: -.03em; }
+  .logo svg { width: 22px; height: 28px; transform: rotate(-12deg); }
+  .logo small { font: 500 9px/1 var(--mono); letter-spacing: .12em; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 3px 5px; margin-left: 2px; }
+  .spacer { flex: 1; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--border); background: transparent; color: var(--text); font: 700 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; white-space: nowrap; transition: border-color .15s, background .15s, color .15s, transform .15s; }
+  .btn:hover { border-color: #555; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn.coral { background: var(--coral); border-color: var(--coral); color: #140702; }
+  .btn.coral:hover { background: #ff7c5e; }
+  .btn.outline { border-color: var(--coral); color: var(--coral); }
+  .btn.outline:hover { background: var(--coral-soft); }
+  .btn.big { min-height: 52px; padding: 0 26px; font-size: 13px; }
+  .btn.block { width: 100%; }
+  .btn .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; padding: 3px; gap: 2px; background: #0A0A0A; }
+  .seg button { border: 0; background: transparent; color: var(--muted); font: 700 11px/1 var(--mono); letter-spacing: .1em; padding: 0 14px; min-height: 32px; border-radius: 999px; cursor: pointer; text-transform: uppercase; }
+  .seg button[aria-pressed="true"] { background: var(--coral); color: #140702; }
+  .head-links { display: flex; align-items: center; gap: 10px; }
+  .sell-mini { display: none; width: 40px; padding: 0; font-size: 20px; }
+
+  /* ---------- home ---------- */
+  .hello { font-weight: 800; font-size: clamp(30px, 5vw, 48px); letter-spacing: -.04em; margin: 28px 0 16px; line-height: 1.05; }
+  .hero { position: relative; overflow: hidden; border-radius: 32px; border: 1px solid var(--border); background: #070707; isolation: isolate; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); align-items: center; min-height: 460px; }
+  .hero .blur { position: absolute; inset: -80px; display: grid; grid-template-columns: repeat(3, 1fr); z-index: -3; filter: blur(48px) saturate(2) brightness(.9); opacity: .75; transform: scale(1.1); }
+  .hero .blur img { width: 100%; height: 100%; object-fit: cover; }
+  .hero::before { content: ''; position: absolute; inset: 0; z-index: -2; background: radial-gradient(55% 80% at 78% 55%, rgba(239,106,76,.35), transparent 70%), linear-gradient(100deg, rgba(0,0,0,.92) 0%, rgba(0,0,0,.72) 45%, rgba(0,0,0,.25) 100%); }
+  .hero::after { content: ''; position: absolute; inset: 0; z-index: -1; opacity: .07; background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size: 44px 44px; mask-image: radial-gradient(70% 70% at 30% 50%, #000, transparent); -webkit-mask-image: radial-gradient(70% 70% at 30% 50%, #000, transparent); }
+  .hero .copy { padding: 44px 0 44px 44px; }
+  .hero .copy { position: relative; z-index: 5; }
+  @media (max-width: 960px) {
+    .hero { grid-template-columns: 1fr; }
+    .hero .copy { padding: 36px 32px 0; }
+    .stack { height: 360px; margin: 0; }
+    .float { width: 210px; }
+  }
+  .live { display: inline-flex; align-items: center; gap: 8px; font: 700 10px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--text); background: rgba(0,0,0,.55); border: 1px solid var(--border); border-radius: 999px; padding: 7px 12px 7px 10px; }
+  .live i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 0 rgba(61,220,132,.7); animation: ping 1.8s infinite; }
+  @keyframes ping { 70% { box-shadow: 0 0 0 8px rgba(61,220,132,0); } 100% { box-shadow: 0 0 0 0 rgba(61,220,132,0); } }
+  .hero h2 { font-size: clamp(42px, 6.4vw, 84px); line-height: .92; letter-spacing: -.055em; margin: 20px 0 18px; font-weight: 800; }
+  .hero h2 em { font-style: normal; color: var(--coral); display: block; }
+  .hero p { margin: 0 0 26px; color: rgba(255,255,255,.78); max-width: 440px; font-size: 16px; }
+  .hero .ctas { display: flex; gap: 10px; flex-wrap: wrap; }
+  .hero .btn.ghost { background: rgba(0,0,0,.45); border-color: rgba(255,255,255,.28); }
+  .stats { display: flex; gap: 0; margin-top: 30px; border: 1px solid var(--border); border-radius: 16px; background: rgba(0,0,0,.5); width: fit-content; max-width: 100%; overflow: hidden; }
+  .stats div { padding: 12px 18px; border-right: 1px solid var(--border); }
+  .stats div:last-child { border-right: 0; }
+  .stats b { display: block; font: 700 22px/1 var(--mono); }
+  .stats small { display: block; margin-top: 6px; font: 500 9px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .stack { position: relative; height: 400px; margin-right: 24px; }
+  .stack::after { content: ''; position: absolute; left: 50%; bottom: 14px; width: 70%; height: 46px; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(closest-side, rgba(239,106,76,.55), transparent); filter: blur(6px); z-index: 0; }
+  .float { position: absolute; top: 50%; left: 50%; width: clamp(170px, 19vw, 240px); border-radius: 22px; overflow: hidden; border: 1px solid #333; background: linear-gradient(180deg, #161616, #0d0d0d); box-shadow: 0 30px 60px rgba(0,0,0,.65); transition: transform .45s cubic-bezier(.2,.8,.2,1), box-shadow .45s; z-index: 1; }
+  .float img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+  .float .ft { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; font: 700 11px/1.2 var(--mono); text-transform: uppercase; letter-spacing: .04em; }
+  .float .ft span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+  .float .ft .pt { color: #140702; background: var(--coral); border-radius: 6px; padding: 4px 7px; white-space: nowrap; }
+  .float.f0 { transform: translate(-50%, -52%) rotate(-2deg); z-index: 3; }
+  .float.f1 { transform: translate(-112%, -44%) rotate(-11deg) scale(.86); z-index: 2; }
+  .float.f2 { transform: translate(12%, -44%) rotate(10deg) scale(.86); z-index: 2; }
+  .stack:hover .float.f0 { transform: translate(-50%, -58%) rotate(0deg); box-shadow: 0 40px 70px rgba(0,0,0,.7), 0 0 50px rgba(239,106,76,.35); }
+  .stack:hover .float.f1 { transform: translate(-122%, -46%) rotate(-14deg) scale(.86); }
+  .stack:hover .float.f2 { transform: translate(22%, -46%) rotate(13deg) scale(.86); }
+  .float:hover { z-index: 4 !important; }
+  @media (prefers-reduced-motion: no-preference) { .stack { animation: bob 6s ease-in-out infinite; } }
+  @keyframes bob { 50% { transform: translateY(-8px); } }
+
+  .dropbar { width: 100%; margin: 36px 0 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--coral); color: #140702; border: 0; border-radius: 16px; padding: 14px 20px; font: 800 19px/1.1 var(--sans); letter-spacing: -.02em; cursor: pointer; text-align: left; }
+  .dropbar .chev { font: 700 18px/1 var(--mono); transition: transform .2s; }
+  .dropbar[aria-expanded="false"] .chev { transform: rotate(-90deg); }
+  .dropbar small { display: block; font: 500 10px/1.4 var(--mono); letter-spacing: .12em; text-transform: uppercase; opacity: .75; margin-top: 4px; }
+  .carousel { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(250px, 300px); gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; scrollbar-width: thin; scrollbar-color: #333 transparent; }
+  .carousel > * { scroll-snap-align: start; }
+  .rank { position: absolute; top: 12px; left: 12px; z-index: 2; display: inline-flex; align-items: center; gap: 4px; background: rgba(0,0,0,.72); border: 1px solid var(--border); border-radius: 999px; padding: 5px 10px; font: 700 13px/1 var(--mono); }
+  .rank .up { color: var(--green); }
+
+  .filters { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin: 34px 0 16px; }
+  .filters h3 { margin: 0; font-size: 22px; letter-spacing: -.03em; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip-btn { border: 1px solid var(--border); background: transparent; color: var(--muted); border-radius: 999px; min-height: 34px; padding: 0 14px; font: 700 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+  .chip-btn[aria-pressed="true"] { color: var(--text); border-color: var(--text); }
+  .chip-sep { width: 1px; background: var(--border); margin: 4px 4px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+
+  /* ---------- item card ---------- */
+  .card { position: relative; display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--radius); background: linear-gradient(180deg, var(--card-a), var(--card-b)); overflow: hidden; transition: transform .18s, border-color .18s; }
+  .card:hover { transform: translateY(-3px); border-color: #3a3a3a; }
+  .media { position: relative; aspect-ratio: 1; background: radial-gradient(120% 90% at 50% 30%, #262626 0%, #111 70%); overflow: hidden; }
+  .media img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s; }
+  .card:hover .media img { transform: scale(1.04); }
+  .media .ph { position: absolute; inset: 0; display: grid; place-items: center; color: #444; font: 500 11px/1 var(--mono); letter-spacing: .1em; }
+  .tag { position: absolute; z-index: 2; top: 12px; right: 12px; background: var(--text); color: #000; border-radius: 6px; padding: 4px 7px; font: 700 10px/1 var(--mono); letter-spacing: .1em; }
+  .pager { position: absolute; z-index: 2; bottom: 10px; left: 0; right: 0; display: flex; justify-content: center; gap: 2px; }
+  .pager button { width: 22px; height: 22px; border: 0; background: transparent; padding: 0; cursor: pointer; display: grid; place-items: center; }
+  .pager button::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.4); }
+  .pager button[aria-current="true"]::before { background: #fff; }
+  .card .body { padding: 12px 14px 14px; display: grid; gap: 6px; }
+  .who { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); min-width: 0; }
+  .who span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .avatar { flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font: 800 10px/1 var(--sans); color: #fff; }
+  .card .title { font-weight: 700; font-size: 16px; letter-spacing: -.02em; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card .meta { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+  .cap { font: 500 11px/1.3 var(--mono); letter-spacing: .04em; color: var(--muted); text-transform: uppercase; }
+  .price { font: 700 15px/1 var(--mono); white-space: nowrap; }
+  .price .cur { font-size: 10px; letter-spacing: .1em; padding: 3px 5px; border-radius: 5px; margin-left: 5px; vertical-align: 2px; border: 1px solid var(--border); color: var(--muted); }
+  .price .cur.usdt { color: var(--green); border-color: rgba(61,220,132,.35); }
+  .price .cur.bot { color: var(--coral); border-color: rgba(239,106,76,.4); }
+  .sold .media img { filter: grayscale(1) brightness(.62); }
+  .sold .media::after { content: ''; position: absolute; inset: 0; background: rgba(70, 30, 28, .28); }
+  .stamp { position: absolute; z-index: 3; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-16deg); border: 3px solid var(--sold); color: var(--sold); background: rgba(0,0,0,.35); padding: 6px 16px 4px; border-radius: 8px; font: 700 34px/1 var(--mono); letter-spacing: .18em; pointer-events: none; }
+  .stamp.big { font-size: clamp(44px, 9vw, 80px); border-width: 5px; }
+  .sold .price { color: var(--muted); text-decoration: line-through; }
+
+  .skeleton .media, .skeleton .line { background: linear-gradient(90deg, #121212, #1c1c1c, #121212); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+  .skeleton .line { height: 12px; border-radius: 6px; }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+
+  .empty { border: 1px dashed var(--border); border-radius: var(--radius); padding: 48px 20px; text-align: center; color: var(--muted); }
+  .empty b { display: block; color: var(--text); font-size: 18px; margin-bottom: 6px; }
+  .empty .btn { margin-top: 16px; }
+
+  /* ---------- item page ---------- */
+  .back { display: inline-flex; margin: 24px 0 16px; font: 700 11px/1 var(--mono); letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+  .back:hover { color: var(--text); }
+  .item { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+  .gallery .media { border-radius: 24px; border: 1px solid var(--border); }
+  .thumbs { display: flex; gap: 10px; margin-top: 10px; }
+  .thumbs button { width: 72px; height: 72px; padding: 0; border-radius: 12px; overflow: hidden; border: 2px solid transparent; background: #111; cursor: pointer; }
+  .thumbs button[aria-current="true"] { border-color: var(--coral); }
+  .thumbs img { width: 100%; height: 100%; object-fit: cover; }
+  .item h1 { font-size: clamp(28px, 4vw, 40px); letter-spacing: -.04em; line-height: 1.05; margin: 6px 0 14px; }
+  .facts { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .facts div { padding: 12px 14px; border-right: 1px solid var(--border); }
+  .facts div:last-child { border-right: 0; }
+  .facts small { display: block; font: 500 10px/1 var(--mono); letter-spacing: .12em; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
+  .facts b { font: 700 14px/1.2 var(--mono); text-transform: uppercase; }
+  .desc { white-space: pre-wrap; color: #d6d6d6; margin: 18px 0; overflow-wrap: anywhere; }
+  .panel { border: 1px solid var(--border); border-radius: var(--radius); background: linear-gradient(180deg, var(--card-a), var(--card-b)); padding: 18px; }
+  .panel + .panel { margin-top: 12px; }
+  .seller-box { display: flex; align-items: center; gap: 12px; }
+  .seller-box .avatar { width: 42px; height: 42px; font-size: 17px; }
+  .seller-box b { display: block; font-size: 16px; }
+  .addr { font: 500 12px/1.4 var(--mono); color: var(--muted); }
+  .addr a:hover, a.ext:hover { color: var(--coral); }
+  .contact { margin-top: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid var(--border); padding-top: 12px; font: 500 13px/1.3 var(--mono); overflow-wrap: anywhere; }
+  .contact small { color: var(--muted); letter-spacing: .1em; font-size: 10px; display: block; margin-bottom: 3px; }
+  .bigprice { font: 700 34px/1 var(--mono); margin: 4px 0 16px; }
+  .bigprice .cur { font-size: 14px; vertical-align: 6px; }
+  .steps { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font: 700 11px/1 var(--mono); letter-spacing: .08em; color: var(--muted); }
+  .steps span { padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border); }
+  .steps .on { color: #140702; background: var(--coral); border-color: var(--coral); }
+  .steps .done { color: var(--green); border-color: rgba(61,220,132,.4); }
+  .status { margin-top: 10px; font: 500 12px/1.45 var(--mono); color: var(--muted); }
+  .status.err { color: var(--danger); }
+  .status.ok { color: var(--green); }
+  .notice { font: 500 11px/1.55 var(--mono); letter-spacing: .03em; color: var(--muted); border: 1px dashed #3a3a3a; border-radius: 12px; padding: 12px 14px; margin-top: 12px; }
+  .notice b { color: var(--text); font-weight: 700; }
+  .yours-box { display: flex; align-items: center; justify-content: center; min-height: 52px; border-radius: 999px; border: 1px dashed var(--border); font: 700 12px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+
+  /* ---------- forms ---------- */
+  .page-title { font-size: clamp(30px, 4.6vw, 44px); letter-spacing: -.04em; line-height: 1.05; margin: 8px 0 6px; }
+  .form { display: grid; gap: 18px; }
+  .sell { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; align-items: start; margin-bottom: 40px; }
+  label.f { display: grid; gap: 7px; }
+  .f > span, .lbl { font: 700 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+  input[type=text], textarea { width: 100%; background: #0d0d0d; border: 1px solid var(--border); border-radius: 12px; color: var(--text); font: 15px/1.4 var(--sans); padding: 12px 14px; }
+  textarea { resize: vertical; min-height: 96px; }
+  input[type=text]:focus, textarea:focus { outline: none; border-color: var(--coral); }
+  .err-text { color: var(--danger); font: 500 12px/1.4 var(--mono); }
+  .opts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .opts .chip-btn { min-height: 40px; }
+  .opts .chip-btn[aria-pressed="true"] { background: var(--text); color: #000; border-color: var(--text); }
+  .price-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: stretch; }
+  .price-row input { font: 700 20px/1 var(--mono); }
+  .photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .slot { position: relative; aspect-ratio: 1; border-radius: 16px; border: 1px dashed #3a3a3a; background: #0b0b0b; display: grid; place-items: center; overflow: hidden; color: var(--muted); font: 700 11px/1.3 var(--mono); letter-spacing: .08em; text-align: center; cursor: pointer; }
+  .slot:hover { border-color: var(--coral); color: var(--coral); }
+  .slot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .slot .x { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border-radius: 50%; border: 0; background: rgba(0,0,0,.75); color: #fff; cursor: pointer; font-size: 15px; }
+  .slot .cover { position: absolute; left: 6px; bottom: 6px; background: var(--coral); color: #140702; border-radius: 5px; padding: 3px 6px; font-size: 9px; }
+  .slot .state { position: absolute; left: 6px; bottom: 6px; right: 6px; background: rgba(0,0,0,.75); border-radius: 6px; padding: 4px 6px; font-size: 9px; color: var(--text); }
+  .preview-card { position: sticky; top: 88px; }
+  .preview-card .lbl { margin-bottom: 10px; }
+  .check { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; font-size: 14px; }
+  .check input { width: 20px; height: 20px; accent-color: var(--coral); flex: none; margin-top: 1px; }
+  .perm { border: 1px solid var(--coral); background: var(--coral-soft); border-radius: var(--radius); padding: 18px; }
+  .perm h3 { margin: 0 0 6px; font-size: 20px; letter-spacing: -.02em; }
+  .perm p { margin: 0 0 14px; color: #f3d3ca; }
+  .progress { display: grid; gap: 8px; margin-top: 14px; font: 500 12px/1.3 var(--mono); }
+  .progress div { display: flex; gap: 10px; align-items: center; color: var(--muted); }
+  .progress div.on { color: var(--text); }
+  .progress div.done { color: var(--green); }
+  .progress div.bad { color: var(--danger); }
+  .progress i { font-style: normal; width: 16px; text-align: center; }
+
+  /* ---------- my stuff ---------- */
+  .tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--border); margin: 22px 0 18px; }
+  .tabs button { border: 0; background: transparent; color: var(--muted); padding: 12px 6px; margin-right: 14px; font: 700 12px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tabs button[aria-selected="true"] { color: var(--text); border-color: var(--coral); }
+  .rows { display: grid; gap: 10px; }
+  .row { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 10px; border: 1px solid var(--border); border-radius: 16px; background: linear-gradient(180deg, var(--card-a), var(--card-b)); }
+  .row .media { border-radius: 12px; }
+  .row .title { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .sub { font: 500 11px/1.5 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+  .row .sub b { color: var(--text); font-weight: 500; }
+  .pill { display: inline-block; font: 700 10px/1 var(--mono); letter-spacing: .1em; padding: 5px 8px; border-radius: 999px; border: 1px solid var(--border); text-transform: uppercase; }
+  .pill.live { color: var(--green); border-color: rgba(61,220,132,.4); }
+  .pill.gone { color: var(--sold); border-color: rgba(183,96,90,.5); }
+  .me-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
+  .me-head .seller-box b { font-size: 22px; letter-spacing: -.03em; }
+
+  /* ---------- success ---------- */
+  .success { max-width: 620px; margin: 40px auto; text-align: center; }
+  .success .media { max-width: 300px; margin: 0 auto 24px; border-radius: 24px; border: 1px solid var(--border); }
+  .success h1 { font-size: clamp(40px, 8vw, 64px); letter-spacing: -.05em; margin: 0; line-height: 1; }
+  .success p { color: var(--muted); }
+  .success .panel { text-align: left; margin: 22px 0; }
+  .success .ctas { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+  /* ---------- modal + toast ---------- */
+  .modal-back { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: grid; place-items: center; padding: var(--gutter); overflow-y: auto; }
+  .modal { width: min(520px, 100%); background: #0e0e0e; border: 1px solid var(--border); border-radius: 24px; padding: 24px; position: relative; }
+  .modal.wide { width: min(760px, 100%); }
+  .modal h2 { margin: 0 0 6px; font-size: 26px; letter-spacing: -.03em; line-height: 1.1; }
+  .modal .x-close { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); background: transparent; cursor: pointer; font-size: 16px; }
+  .modal .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; flex-wrap: wrap; }
+  .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
+  .mode-card { text-align: left; border: 1px solid var(--border); background: linear-gradient(180deg, var(--card-a), var(--card-b)); border-radius: 20px; padding: 22px 18px; cursor: pointer; min-height: 170px; display: flex; flex-direction: column; justify-content: space-between; transition: border-color .15s, transform .15s; }
+  .mode-card:hover { border-color: var(--coral); transform: translateY(-2px); }
+  .mode-card b { font: 800 22px/1.05 var(--mono); letter-spacing: .02em; }
+  .mode-card span { color: var(--muted); font-size: 13px; }
+  .mode-card .ico { font-size: 28px; }
+  .crop { position: relative; width: min(420px, 100%); aspect-ratio: 1; margin: 16px auto 12px; overflow: hidden; border-radius: 16px; background: #111; touch-action: none; cursor: grab; }
+  .crop::after { content: ''; position: absolute; inset: 0; border: 2px solid rgba(255,255,255,.8); border-radius: 16px; pointer-events: none; box-shadow: inset 0 0 0 9999px rgba(0,0,0,0); }
+  .zoom { display: flex; align-items: center; gap: 12px; width: min(420px, 100%); margin: 0 auto; font: 700 11px/1 var(--mono); color: var(--muted); }
+  .zoom input { flex: 1; accent-color: var(--coral); }
+  .toasts { position: fixed; z-index: 80; left: 50%; bottom: 24px; transform: translateX(-50%); display: grid; gap: 8px; width: min(520px, calc(100% - 32px)); }
+  .toast { background: #161616; border: 1px solid var(--border); border-radius: 14px; padding: 12px 16px; font: 500 12px/1.5 var(--mono); box-shadow: 0 12px 40px rgba(0,0,0,.6); animation: pop .2s ease-out; }
+  .toast a { color: var(--coral); }
+  @keyframes pop { from { opacity: 0; transform: translateY(8px); } }
+
+  /* ---------- footer (a product drop) ---------- */
+  footer.foot { margin-top: 72px; padding-bottom: 40px; }
+  .foot .dropbar { margin-top: 0; }
+  .chain-card { display: block; border: 1px solid var(--border); border-radius: 24px; overflow: hidden; background: linear-gradient(180deg, var(--card-a), var(--card-b)); transition: border-color .2s; }
+  .chain-card .stage { position: relative; height: 300px; display: grid; place-items: center; background: radial-gradient(60% 70% at 50% 45%, #1f1f1f 0%, #0c0c0c 70%, #070707 100%); overflow: hidden; }
+  .chain-card .stage::before { content: ''; position: absolute; width: 240px; height: 40px; bottom: 54px; left: 50%; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.9), transparent); transition: opacity .3s, transform .3s; }
+  .chain-card .stage::after { content: ''; position: absolute; inset: 0; background: radial-gradient(40% 45% at 50% 50%, rgba(239,106,76,.0), transparent 70%); transition: background .3s; }
+  .chain-card img { position: relative; z-index: 1; width: 170px; height: 170px; border-radius: 34px; transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s; box-shadow: 0 20px 40px rgba(0,0,0,.6); }
+  .chain-card:hover { border-color: rgba(239,106,76,.6); }
+  .chain-card:hover img { transform: translateY(-14px) rotate(-3deg); box-shadow: 0 34px 60px rgba(0,0,0,.7), 0 0 60px rgba(239,106,76,.45); }
+  .chain-card:hover .stage::before { opacity: .55; transform: translateX(-50%) scale(.82); }
+  .chain-card:hover .stage::after { background: radial-gradient(40% 45% at 50% 50%, rgba(239,106,76,.22), transparent 70%); }
+  .chain-card .body { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 16px 18px 18px; flex-wrap: wrap; }
+  .chain-card .body b { font-size: 20px; letter-spacing: -.02em; display: block; }
+  .foot-cta { display: flex; justify-content: center; margin: 18px 0 22px; }
+  .legal { text-align: center; font: 500 11px/1.6 var(--mono); letter-spacing: .1em; color: var(--muted); }
+
+  /* ---------- mobile dock ---------- */
+  .dock { display: none; }
+  @media (max-width: 760px) {
+    :root { --radius: 16px; }
+    header.top .wrap { height: 58px; }
+    .head-links .seg, .head-links .me-link, .head-links .sell-full { display: none; }
+    .sell-mini { display: inline-flex; }
+    .hero { grid-template-columns: 1fr; border-radius: 24px; min-height: 0; }
+    .hero .copy { padding: 26px 20px 8px; }
+    .hero h2 { font-size: clamp(40px, 12vw, 56px); }
+    .hero p { font-size: 15px; }
+    .stats div { padding: 10px 12px; }
+    .stats b { font-size: 17px; }
+    .stack { height: 280px; margin: 0 0 8px; }
+    .float { width: 158px; border-radius: 16px; }
+    .float .ft { padding: 8px 9px; font-size: 9px; }
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .card .body { padding: 10px 10px 12px; }
+    .card .title { font-size: 14px; }
+    .card .meta { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .price { font-size: 14px; }
+    .stamp { font-size: 22px; border-width: 2px; padding: 5px 10px 3px; }
+    .item, .sell { grid-template-columns: 1fr; gap: 20px; }
+    .preview-card { position: static; }
+    .modes { grid-template-columns: 1fr; }
+    .mode-card { min-height: 120px; }
+    .facts b { font-size: 12px; }
+    .chain-card .stage { height: 240px; }
+    .chain-card img { width: 140px; height: 140px; }
+    .row { grid-template-columns: 60px minmax(0, 1fr); }
+    .row > :last-child { grid-column: 1 / -1; justify-self: start; }
+    body { padding-bottom: 96px; }
+    .toasts { bottom: 100px; }
+    .dock { display: flex; position: fixed; z-index: 40; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); align-items: center; justify-content: space-between; gap: 6px; padding: 8px; border-radius: 22px; background: rgba(14,14,14,.94); border: 1px solid var(--border); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+    .dock::before { content: ''; position: fixed; z-index: -1; left: 0; right: 0; bottom: 0; height: 150px; pointer-events: none; background: radial-gradient(70% 100% at 50% 100%, rgba(239,106,76,.38), rgba(239,106,76,0) 70%); }
+    .dock a { flex: 1; display: grid; justify-items: center; gap: 3px; padding: 6px 4px; border-radius: 14px; font: 700 9px/1 var(--mono); letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+    .dock a svg { width: 20px; height: 20px; }
+    .dock a[aria-current="page"] { color: var(--text); }
+    .dock .seg button { padding: 0 11px; min-height: 36px; }
+  }
+</style>
+</head>
+<body>
+<div class="announce" aria-label="Every sale settled on BOT Chain. Every sale final.">
+  <div class="track" aria-hidden="true" id="announce"></div>
+</div>
+<div class="preview-bar" id="preview-bar" hidden></div>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#/" aria-label="Resole home">
+      <svg viewBox="0 0 24 32" aria-hidden="true"><path d="M12 1c5 0 9 3.8 9 9.6 0 3.9-2 6-2 8.9 0 2.8.9 3.7.9 5.8 0 2.4-2.8 3.8-7.9 3.8s-7.9-1.4-7.9-3.8c0-2.1.9-3 .9-5.8 0-2.9-2-5-2-8.9C3 4.8 7 1 12 1z" fill="#EF6A4C"/><path d="M7.5 8.5h9M7 12h10M8.5 23.5h7M9 26.5h6" stroke="#000" stroke-width="1.6" stroke-linecap="round" opacity=".55"/></svg>
+      RESOLE<small id="net-badge" hidden>TESTNET</small>
+    </a>
+    <div class="spacer"></div>
+    <div class="head-links" id="head-links"></div>
+  </div>
+</header>
+
+<main id="app" class="wrap" tabindex="-1"></main>
+
+<footer class="foot wrap" id="footer"></footer>
+
+<nav class="dock" id="dock" aria-label="Quick navigation"></nav>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+<div id="modal-root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.5/ethers.umd.min.js" crossorigin="anonymous"></script>
+<script>
+(() => {
+  'use strict';
+
+  // ============================================================
+  // Config — the only values to edit after deploying.
+  // ============================================================
+  const CONFIG = {
+    networks: {
+      // `contract` is the single source for the app, the footer card and the explorer link.
+      mainnet: { chainId: 677, name: 'BOT Chain', rpc: 'https://rpc.botchain.ai', explorer: 'https://scan.botchain.ai', contract: '', fromBlock: 0 },
+      testnet: { chainId: 968, name: 'BOT Chain Testnet', rpc: 'https://rpc.bohr.life', explorer: 'https://scan.bohr.life', contract: '', fromBlock: 0 },
+    },
+    // Photo upload Worker (worker/), e.g. 'https://resole-upload.<account>.workers.dev/upload'.
+    uploadUrl: '',
+    // Listings store IPFS CIDs; photos load through this gateway, then the fallback if it fails.
+    ipfsGateway: 'https://gateway.pinata.cloud/ipfs/',
+    ipfsFallback: 'https://ipfs.io/ipfs/',
+  };
+  // The USDT token is read from the deployed contract (usdt()). If it is the zero address the app runs BOT-only.
+
+  const KINDS = ['Shoes', 'Apparel'];
+  const CONDITIONS = ['New', 'Like new', 'Good', 'Worn'];
+  const CURRENCIES = ['BOT', 'USDT'];
+  const LIMITS = { name: 32, contact: 64, title: 80, size: 16, description: 500, photos: 3 };
+  const MAX_FILE = 5 * 1024 * 1024;
+  const OUT_SIDE = 1200;
+  const ZERO = '0x0000000000000000000000000000000000000000';
+
+  const ITEM_TUPLE = 'tuple(address seller, string title, uint8 kind, string size, uint8 condition, string[] photos, string description, uint8 currency, uint256 price, address buyer, uint64 listedAt, uint64 soldAt)';
+  const ABI = [
+    'function usdt() view returns (address)',
+    'function profiles(address) view returns (bool exists, string name, string contact)',
+    'function setProfile(string name, string contact)',
+    'function list(string title, uint8 kind, string size, uint8 condition, string[] photos, string description, uint8 currency, uint256 price) returns (uint256 id)',
+    'function buy(uint256 id) payable',
+    `function getItem(uint256 id) view returns (${ITEM_TUPLE})`,
+    `function getItems(uint256 start, uint256 count) view returns (${ITEM_TUPLE}[])`,
+    'function total() view returns (uint256)',
+    'function itemsOf(address seller) view returns (uint256[])',
+    'function purchasesOf(address buyer) view returns (uint256[])',
+    'event ProfileSet(address indexed user, string name)',
+    'event Listed(uint256 indexed id, address indexed seller, uint8 currency, uint256 price)',
+    'event Sold(uint256 indexed id, address indexed buyer, address indexed seller, uint8 currency, uint256 price)',
+    'error EmptyName()', 'error TextTooLong()', 'error NoProfile()', 'error EmptyTitle()', 'error EmptySize()',
+    'error BadCondition()', 'error BadPhotoCount()', 'error EmptyPhoto()', 'error ZeroPrice()', 'error UsdtDisabled()',
+    'error ItemNotFound()', 'error AlreadySold()', 'error OwnItem()', 'error WrongAmount()', 'error PaymentFailed()',
+  ];
+  const ERC20 = [
+    'function decimals() view returns (uint8)',
+    'function balanceOf(address) view returns (uint256)',
+    'function allowance(address owner, address spender) view returns (uint256)',
+    'function approve(address spender, uint256 amount) returns (bool)',
+  ];
+  const REVERTS = {
+    EmptyName: 'Add a display name.',
+    TextTooLong: 'One of the fields is too long.',
+    NoProfile: 'Create your profile first.',
+    EmptyTitle: 'Give the item a title.',
+    EmptySize: 'Add a size.',
+    BadCondition: 'Pick a condition.',
+    BadPhotoCount: 'Add 1 to 3 photos.',
+    EmptyPhoto: 'A photo is missing. Upload it again.',
+    ZeroPrice: 'Set a price above zero.',
+    UsdtDisabled: 'USDT is not available on this contract. Price it in BOT.',
+    ItemNotFound: 'Item not found.',
+    AlreadySold: 'Just sold — too late! No money was taken.',
+    OwnItem: 'That is your own listing.',
+    WrongAmount: 'The amount did not match the price. Nothing was sent.',
+    PaymentFailed: "The seller's wallet could not receive BOT. Nothing was sent.",
+  };
+
+  // ============================================================
+  // Network + mode
+  // ============================================================
+  function storage(key, value) {
+    try {
+      if (value === undefined) return localStorage.getItem(key);
+      if (value === null) localStorage.removeItem(key);
+      else localStorage.setItem(key, value);
+      return true;
+    } catch { return value === undefined ? null : false; }
+  }
+
+  const params = new URLSearchParams(location.search);
+  const isLocal = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+  const netKey = params.get('net') === 'testnet' ? 'testnet' : 'mainnet';
+  const NET = { ...CONFIG.networks[netKey] };
+  // On localhost, pick up an address deployed from deploy.html so it can be tried before editing CONFIG.
+  if (!NET.contract && isLocal) NET.contract = storage('resole.contract.' + NET.chainId) || '';
+  const MAINNET = { ...CONFIG.networks.mainnet };
+  if (!MAINNET.contract && isLocal) MAINNET.contract = storage('resole.contract.' + MAINNET.chainId) || '';
+  const PREVIEW = !NET.contract; // no contract yet: sales are simulated in this browser
+  const CHAIN_HEX = '0x' + NET.chainId.toString(16);
+  const PREVIEW_WALLET = '0x5E50000000000000000000000000000000000B06';
+
+  const state = {
+    account: null, chainId: null, previewWallet: false,
+    me: null, // the connected wallet's profile, or null
+    mode: storage('resole.mode') === 'selling' ? 'selling' : 'buying',
+    items: [], profiles: new Map(), loaded: false, loading: false, loadError: null,
+    usdt: { enabled: false, address: ZERO, decimals: 6 },
+    kind: 'all', status: 'all', dropsOpen: true,
+    buy: null, // { id, step, error, approved }
+    hashes: {}, // 'list:<id>' / 'sold:<id>' → tx hash from this session
+    tab: 'listings', sub: 'available',
+  };
+
+  // ============================================================
+  // Small helpers
+  // ============================================================
+  const $ = (id) => document.getElementById(id);
+  function h(tag, props = {}, ...children) {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(props || {})) {
+      if (k === 'class') el.className = v;
+      else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
+      else if (k === 'value') el.value = v;
+      else if (k === 'checked') el.checked = !!v;
+      else if (v !== false && v != null) el.setAttribute(k, v === true ? '' : v);
+    }
+    for (const c of children.flat(Infinity)) if (c != null && c !== false) el.append(c.nodeType ? c : String(c));
+    return el;
+  }
+  const svg = (markup) => { const t = document.createElement('template'); t.innerHTML = markup.trim(); return t.content.firstChild; };
+  const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '');
+  const bytes = (s) => new TextEncoder().encode(s).length;
+  const same = (a, b) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
+  const extLink = (href, text, cls = 'ext') => h('a', { href, target: '_blank', rel: 'noopener', class: cls }, text);
+  const txLink = (hash, text = 'View tx ↗') => (hash && !hash.startsWith('preview') ? extLink(`${NET.explorer}/tx/${hash}`, text) : h('span', { class: 'muted' }, PREVIEW ? 'preview tx' : ''));
+  const addrLink = (a) => extLink(`${NET.explorer}/address/${a}`, short(a));
+  const decimalsOf = (currency) => (currency === 1 ? state.usdt.decimals : 18);
+  function fmtAmount(value, currency) {
+    const s = ethers.formatUnits(value, decimalsOf(currency));
+    const [i, f = ''] = s.split('.');
+    const frac = f.replace(/0+$/, '').slice(0, 6);
+    return Number(i).toLocaleString('en-US') + (frac ? '.' + frac : '');
+  }
+  const priceLabel = (item) => `${fmtAmount(item.price, item.currency)} ${CURRENCIES[item.currency]}`;
+  const priceEl = (item, cls = 'price') => h('span', { class: cls }, fmtAmount(item.price, item.currency), h('span', { class: 'cur ' + CURRENCIES[item.currency].toLowerCase() }, CURRENCIES[item.currency]));
+  const caption = (item) => `[SIZE ${item.size} · ${CONDITIONS[item.condition] || '—'}]`.toUpperCase();
+  const isMine = (item) => same(item.seller, state.account);
+  const isSold = (item) => item.buyer && item.buyer !== ZERO;
+  function ago(sec) {
+    const s = Math.max(0, Math.floor(Date.now() / 1000) - Number(sec));
+    if (s < 60) return 'just now';
+    if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+    if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+    if (s < 86400 * 30) return `${Math.floor(s / 86400)}d ago`;
+    return new Date(Number(sec) * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  function avatar(addr, name) {
+    let hue = 0;
+    for (const ch of (addr || '').toLowerCase()) hue = (hue * 31 + ch.charCodeAt(0)) % 360;
+    return h('span', { class: 'avatar', style: `background: linear-gradient(135deg, hsl(${hue} 70% 55%), hsl(${(hue + 60) % 360} 70% 38%))`, 'aria-hidden': 'true' }, (name || '?').trim().charAt(0).toUpperCase() || '?');
+  }
+  const nameOf = (addr) => state.profiles.get((addr || '').toLowerCase())?.name || short(addr);
+  const friendly = (message) => Object.assign(new Error(message), { friendly: true });
+
+  function photoSrc(p) {
+    if (PREVIEW && (p.startsWith('data:image/') || p.startsWith('images/demo/'))) return p;
+    if (/^[A-Za-z0-9]{20,100}$/.test(p)) return CONFIG.ipfsGateway + p;
+    return null;
+  }
+  function photo(p, alt) {
+    const src = p ? photoSrc(p) : null;
+    if (!src) return h('div', { class: 'ph' }, 'NO PHOTO');
+    const img = h('img', { src, alt: alt || '', loading: 'lazy', decoding: 'async' });
+    img.addEventListener('error', () => {
+      if (img.dataset.fallback || !src.startsWith(CONFIG.ipfsGateway)) return;
+      img.dataset.fallback = '1';
+      img.src = CONFIG.ipfsFallback + p;
+    });
+    return img;
+  }
+
+  function toast(...parts) {
+    const t = h('div', { class: 'toast' }, ...parts);
+    $('toasts').append(t);
+    setTimeout(() => t.remove(), 6500);
+  }
+
+  function parseRevert(e) {
+    const iface = new ethers.Interface(ABI);
+    for (const data of [e?.data, e?.info?.error?.data?.data, e?.info?.error?.data, e?.error?.data?.data, e?.error?.data]) {
+      if (typeof data !== 'string' || !data.startsWith('0x')) continue;
+      try { return iface.parseError(data)?.name; } catch { /* not ours */ }
+    }
+    return null;
+  }
+  function explain(e) {
+    if (e?.friendly) return e.message;
+    if (e?.code === 4001 || e?.code === 'ACTION_REJECTED' || e?.info?.error?.code === 4001) return 'Cancelled in MetaMask. Nothing was sent.';
+    const name = e?.revert?.name || parseRevert(e);
+    if (name && REVERTS[name]) return REVERTS[name];
+    if (e?.code === 'INSUFFICIENT_FUNDS' || /insufficient funds/i.test(e?.message || '')) return 'Not enough BOT to cover this and the gas fee.';
+    if (e?.code === -32002) return 'MetaMask is already asking. Open MetaMask to continue.';
+    return e?.shortMessage || e?.message || 'Something went wrong. Please try again.';
+  }
+  const isCancel = (e) => e?.code === 4001 || e?.code === 'ACTION_REJECTED' || e?.info?.error?.code === 4001;
+
+  // ============================================================
+  // Data stores: chain (real) and preview (this browser only)
+  // ============================================================
+  function normItem(r, id) {
+    return {
+      id, seller: ethers.getAddress(r.seller), title: r.title, kind: Number(r.kind), size: r.size,
+      condition: Number(r.condition), photos: [...r.photos], description: r.description,
+      currency: Number(r.currency), price: BigInt(r.price), buyer: r.buyer === ZERO ? ZERO : ethers.getAddress(r.buyer),
+      listedAt: Number(r.listedAt), soldAt: Number(r.soldAt),
+    };
+  }
+
+  let rpc = null, reader = null;
+  const chainStore = {
+    async init() {
+      rpc = new ethers.JsonRpcProvider(NET.rpc, NET.chainId, { staticNetwork: true });
+      reader = new ethers.Contract(NET.contract, ABI, rpc);
+      const token = await reader.usdt();
+      if (token !== ZERO) {
+        const decimals = Number(await new ethers.Contract(token, ERC20, rpc).decimals());
+        state.usdt = { enabled: true, address: token, decimals };
+      }
+    },
+    async items() {
+      const total = Number(await reader.total());
+      const out = [];
+      for (let start = 0; start < total; start += 40) {
+        const page = await reader.getItems(start, 40);
+        page.forEach((r, i) => out.push(normItem(r, start + i)));
+      }
+      return out;
+    },
+    async item(id) {
+      try { return normItem(await reader.getItem(id), id); } catch (e) {
+        if ((e?.revert?.name || parseRevert(e)) === 'ItemNotFound') return null;
+        throw e;
+      }
+    },
+    async profile(addr) {
+      const p = await reader.profiles(addr);
+      return p.exists ? { name: p.name, contact: p.contact } : null;
+    },
+    async balances(addr) {
+      const [bot, usdt] = await Promise.all([
+        rpc.getBalance(addr),
+        state.usdt.enabled ? new ethers.Contract(state.usdt.address, ERC20, rpc).balanceOf(addr) : 0n,
+      ]);
+      return { bot, usdt };
+    },
+    async allowance(addr) {
+      if (!state.usdt.enabled) return 0n;
+      return new ethers.Contract(state.usdt.address, ERC20, rpc).allowance(addr, NET.contract);
+    },
+    async writer() {
+      const signer = await new ethers.BrowserProvider(window.ethereum).getSigner();
+      if (!same(await signer.getAddress(), state.account)) throw friendly('MetaMask switched accounts. Try again.');
+      return { signer, contract: new ethers.Contract(NET.contract, ABI, signer) };
+    },
+    async setProfile(name, contact) {
+      const { contract } = await this.writer();
+      const tx = await contract.setProfile(name, contact);
+      await tx.wait();
+      return tx.hash;
+    },
+    async list(f, onStep) {
+      const { contract } = await this.writer();
+      onStep('sign');
+      const tx = await contract.list(f.title, f.kind, f.size, f.condition, f.photos, f.description, f.currency, f.price);
+      onStep('confirm', tx.hash);
+      const receipt = await tx.wait();
+      const log = receipt.logs.map((l) => { try { return contract.interface.parseLog(l); } catch { return null; } }).find((l) => l?.name === 'Listed');
+      return { hash: tx.hash, id: log ? Number(log.args.id) : null };
+    },
+    async buy(item, onStep) {
+      const { signer, contract } = await this.writer();
+      if (item.currency === 0) {
+        onStep('buy');
+        const tx = await contract.buy(item.id, { value: item.price });
+        onStep('confirm', tx.hash);
+        await tx.wait();
+        return tx.hash;
+      }
+      const token = new ethers.Contract(state.usdt.address, ERC20, signer);
+      if ((await this.allowance(state.account)) < item.price) {
+        onStep('approve');
+        const ok = await token.approve(NET.contract, item.price);
+        onStep('approving', ok.hash);
+        await ok.wait();
+      }
+      onStep('buy');
+      const tx = await contract.buy(item.id);
+      onStep('confirm', tx.hash);
+      await tx.wait();
+      return tx.hash;
+    },
+    async saleTx(id) {
+      const logs = await reader.queryFilter(reader.filters.Sold(id), NET.fromBlock || 0);
+      return logs[0]?.transactionHash || null;
+    },
+  };
+
+  const DEMO_SELLERS = [
+    { address: '0x5E11000000000000000000000000000000000A01', name: 'Mika Kicks', contact: 'TG @mikakicks' },
+    { address: '0x5E11000000000000000000000000000000000B02', name: 'Noon Closet', contact: 'LINE noon.closet' },
+    { address: '0x5E11000000000000000000000000000000000C03', name: 'Second Lap', contact: '' },
+  ];
+  const DEMO_ITEMS = [
+    // [seller, title, kind, size, condition, photo, currency, price, hoursAgo, soldTo]
+    [0, 'White Leather Sneakers', 0, '42', 1, '19-white-leather-sneakers', 0, '120', 3],
+    [1, 'Windbreaker Jacket', 1, 'L', 1, '07-black-white-windbreaker-jacket', 1, '40', 5],
+    [2, 'Silver Running Shoes', 0, '44', 1, '27-silver-grey-running-shoes', 0, '150', 9],
+    [0, 'Cream Chunky Sneakers', 0, '39', 2, '20-cream-chunky-sneakers', 1, '25', 14],
+    [1, 'Camel Wrap Coat', 1, 'M', 2, '06-camel-wrap-coat', 0, '300', 20, 2],
+    [2, 'Black Chelsea Boots', 0, '41', 3, '21-black-chelsea-boots', 0, '80', 30, 1],
+    [1, 'Oatmeal Knit Jumper', 1, 'S', 3, '05-oatmeal-knit-jumper', 1, '12', 34],
+    [0, 'Red Rain Boots', 0, '38', 0, '22-red-rain-boots', 1, '18', 40],
+    [2, 'Straight-Leg Jeans', 1, 'W30', 2, '12-dark-indigo-straight-leg-jeans', 1, '22', 52],
+    [1, 'Chestnut Penny Loafers', 0, '43', 2, '25-chestnut-penny-loafers', 1, '35', 60],
+    [0, 'Graphic Tee', 1, 'M', 0, '04-white-red-graphic-tee', 0, '60', 75],
+    [2, 'Tan Leather Sandals', 0, '40', 1, '26-tan-leather-sandals', 1, '15', 90, 0],
+    [1, 'Pointed Slingbacks', 0, '38', 2, '24-black-pointed-slingbacks', 0, '90', 110],
+    [2, 'Lavender Cargo Joggers', 1, 'M', 1, '13-lavender-cargo-joggers', 1, '18', 130],
+  ];
+  const previewStore = {
+    key: `resole.preview.${NET.chainId}.v1`,
+    seed() {
+      const now = Math.floor(Date.now() / 1000);
+      const profiles = Object.fromEntries(DEMO_SELLERS.map((s) => [s.address.toLowerCase(), { name: s.name, contact: s.contact }]));
+      const items = DEMO_ITEMS.map(([s, title, kind, size, condition, img, currency, price, hours, soldTo]) => ({
+        seller: DEMO_SELLERS[s].address, title, kind, size, condition, photos: [`images/demo/${img}.jpg`],
+        description: 'Demo listing for preview mode. Photo: Unsplash.', currency,
+        price: ethers.parseUnits(price, currency === 1 ? 6 : 18).toString(),
+        buyer: soldTo != null ? DEMO_SELLERS[soldTo].address : ZERO,
+        listedAt: now - hours * 3600, soldAt: soldTo != null ? now - Math.floor(hours / 2) * 3600 : 0,
+      }));
+      return { profiles, items, balances: {}, allowances: {}, sales: {} };
+    },
+    read() {
+      try { const d = JSON.parse(storage(this.key)); if (d && Array.isArray(d.items)) return d; } catch { /* reseed */ }
+      return this.seed();
+    },
+    write(d) {
+      if (!storage(this.key, JSON.stringify(d))) throw friendly("This browser's preview storage is full. Open the site with ?reset to start over.");
+    },
+    async init() { state.usdt = { enabled: true, address: '0x0000000000000000000000000000000000005d17', decimals: 6 }; },
+    async items() { return this.read().items.map((r, i) => normItem(r, i)); },
+    async item(id) { const r = this.read().items[id]; return r ? normItem(r, id) : null; },
+    async profile(addr) { return this.read().profiles[addr.toLowerCase()] || null; },
+    async balances(addr) {
+      const b = this.read().balances[addr.toLowerCase()] || { bot: ethers.parseEther('1000').toString(), usdt: ethers.parseUnits('500', 6).toString() };
+      return { bot: BigInt(b.bot), usdt: BigInt(b.usdt) };
+    },
+    async allowance(addr) { return BigInt(this.read().allowances[addr.toLowerCase()] || 0); },
+    fakeHash: () => 'preview' + Math.random().toString(16).slice(2),
+    pause: () => new Promise((r) => setTimeout(r, 700)),
+    async setProfile(name, contact) {
+      await this.pause();
+      const d = this.read();
+      d.profiles[state.account.toLowerCase()] = { name, contact };
+      this.write(d);
+      return this.fakeHash();
+    },
+    async list(f, onStep) {
+      onStep('sign'); await this.pause();
+      const hash = this.fakeHash();
+      onStep('confirm', hash); await this.pause();
+      const d = this.read();
+      d.items.push({ seller: state.account, title: f.title, kind: f.kind, size: f.size, condition: f.condition, photos: f.photos, description: f.description, currency: f.currency, price: f.price.toString(), buyer: ZERO, listedAt: Math.floor(Date.now() / 1000), soldAt: 0 });
+      this.write(d);
+      return { hash, id: d.items.length - 1 };
+    },
+    async buy(item, onStep) {
+      const me = state.account.toLowerCase();
+      if (item.currency === 1 && (await this.allowance(me)) < item.price) {
+        onStep('approve'); await this.pause();
+        onStep('approving', this.fakeHash()); await this.pause();
+        const d = this.read(); d.allowances[me] = item.price.toString(); this.write(d);
+      }
+      onStep('buy'); await this.pause();
+      const hash = this.fakeHash();
+      onStep('confirm', hash); await this.pause();
+      const d = this.read();
+      const r = d.items[item.id];
+      if (r.buyer !== ZERO) throw Object.assign(new Error('AlreadySold'), { revert: { name: 'AlreadySold' } });
+      r.buyer = state.account; r.soldAt = Math.floor(Date.now() / 1000);
+      const bal = await this.balances(me);
+      if (item.currency === 0) bal.bot -= item.price; else { bal.usdt -= item.price; d.allowances[me] = '0'; }
+      d.balances[me] = { bot: bal.bot.toString(), usdt: bal.usdt.toString() };
+      d.sales[item.id] = hash;
+      this.write(d);
+      return hash;
+    },
+    async saleTx(id) { return this.read().sales[id] || null; },
+  };
+  if (PREVIEW && params.has('reset')) storage(previewStore.key, null);
+
+  const store = PREVIEW ? previewStore : chainStore;
+
+  async function refresh({ quiet = false } = {}) {
+    state.loading = true;
+    if (!quiet) render();
+    try {
+      const items = await store.items();
+      const addrs = new Set();
+      for (const i of items) { addrs.add(i.seller.toLowerCase()); if (isSold(i)) addrs.add(i.buyer.toLowerCase()); }
+      if (state.account) addrs.add(state.account.toLowerCase());
+      const missing = [...addrs].filter((a) => !state.profiles.has(a));
+      const found = await Promise.all(missing.map((a) => store.profile(a).catch(() => null)));
+      missing.forEach((a, i) => state.profiles.set(a, found[i]));
+      state.items = items;
+      state.loaded = true;
+      state.loadError = null;
+    } catch (e) {
+      console.error(e);
+      state.loadError = `Could not reach ${NET.name}. Check your connection and try again.`;
+    } finally {
+      state.loading = false;
+      render();
+    }
+  }
+
+  // ============================================================
+  // Wallet
+  // ============================================================
+  async function switchChain() {
+    const eth = window.ethereum;
+    try {
+      await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_HEX }] });
+    } catch (e) {
+      const unknownChain = e.code === 4902 || e?.data?.originalError?.code === 4902 || /unrecognized chain/i.test(e.message || '');
+      if (!unknownChain) throw e;
+      await eth.request({
+        method: 'wallet_addEthereumChain',
+        params: [{ chainId: CHAIN_HEX, chainName: NET.name, nativeCurrency: { name: 'BOT', symbol: 'BOT', decimals: 18 }, rpcUrls: [NET.rpc], blockExplorerUrls: [NET.explorer] }],
+      });
+    }
+    state.chainId = Number(await eth.request({ method: 'eth_chainId' }));
+    if (state.chainId !== NET.chainId) throw friendly(`MetaMask is not on ${NET.name}.`);
+    render();
+  }
+
+  async function connect() {
+    const eth = window.ethereum;
+    if (!eth) return false;
+    try {
+      const [account] = await eth.request({ method: 'eth_requestAccounts' });
+      state.chainId = Number(await eth.request({ method: 'eth_chainId' }));
+      await setAccount(account);
+      if (!PREVIEW && state.chainId !== NET.chainId) await switchChain();
+      return !!state.account;
+    } catch (e) {
+      if (!isCancel(e)) toast(explain(e));
+      render();
+      return false;
+    }
+  }
+
+  async function setAccount(account, { preview = false } = {}) {
+    const next = account ? ethers.getAddress(account) : null;
+    if (next === state.account && preview === state.previewWallet) return;
+    state.account = next;
+    state.previewWallet = preview;
+    state.me = null;
+    state.buy = null;
+    if (next) {
+      try { state.me = await store.profile(next); } catch { state.me = null; }
+      state.profiles.set(next.toLowerCase(), state.me);
+    }
+    render();
+  }
+
+  async function initWallet() {
+    const eth = window.ethereum;
+    if (!eth) {
+      if (PREVIEW && storage('resole.previewWallet')) await setAccount(PREVIEW_WALLET, { preview: true });
+      return;
+    }
+    eth.on?.('accountsChanged', ([account]) => setAccount(account));
+    eth.on?.('chainChanged', (id) => { state.chainId = Number(id); render(); });
+    try {
+      const [account] = await eth.request({ method: 'eth_accounts' });
+      state.chainId = Number(await eth.request({ method: 'eth_chainId' }));
+      if (account) await setAccount(account);
+    } catch { /* stay signed out */ }
+  }
+
+  const wrongNetwork = () => !PREVIEW && !state.previewWallet && !!state.account && state.chainId !== NET.chainId;
+  const switchNow = () => switchChain().catch((e) => { if (!isCancel(e)) toast(explain(e)); });
+
+  // Gets the wallet ready for a write: connected, on BOT Chain, and (optionally) with a profile.
+  async function ensureReady({ needProfile = false } = {}) {
+    if (!window.ethereum) {
+      if (!PREVIEW) { installModal(); return false; }
+      if (!state.account) { await setAccount(PREVIEW_WALLET, { preview: true }); storage('resole.previewWallet', '1'); }
+    } else {
+      if (!state.account || state.previewWallet) { if (!(await connect())) return false; }
+      if (wrongNetwork()) {
+        try { await switchChain(); } catch (e) { if (!isCancel(e)) toast(explain(e)); return false; }
+      }
+    }
+    if (needProfile && !state.me) return profileModal();
+    return true;
+  }
+
+  async function signIn() {
+    if (!(await ensureReady({ needProfile: true }))) return;
+    modeModal();
+  }
+
+  function setMode(mode, { quiet = false } = {}) {
+    if (mode === state.mode) return;
+    state.mode = mode;
+    storage('resole.mode', mode);
+    if (!quiet) toast(mode === 'selling' ? 'Selling mode. Tap + SELL to list an item.' : 'Buying mode. Happy hunting.');
+    if (mode === 'buying' && route().name === 'sell') go('#/');
+    else render();
+  }
+
+  // ============================================================
+  // Routing
+  // ============================================================
+  function route() {
+    const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+    if (parts[0] === 'item' && /^\d+$/.test(parts[1] || '')) return { name: 'item', id: Number(parts[1]) };
+    if (parts[0] === 'bought' && /^\d+$/.test(parts[1] || '')) return { name: 'bought', id: Number(parts[1]) };
+    if (parts[0] === 'sell') return { name: 'sell' };
+    if (parts[0] === 'me') return { name: 'me', tab: parts[1] === 'purchases' ? 'purchases' : 'listings' };
+    return { name: 'home' };
+  }
+  function go(hash) {
+    if (location.hash === hash) render();
+    else location.hash = hash;
+  }
+  let lastRoute = '';
+  window.addEventListener('hashchange', () => {
+    const r = route();
+    if (r.name !== 'item') state.buy = null;
+    render();
+    if (location.hash !== lastRoute) window.scrollTo({ top: 0 });
+    lastRoute = location.hash;
+  });
+
+  // ============================================================
+  // Header, dock, footer
+  // ============================================================
+  function modeToggle() {
+    return h('div', { class: 'seg', role: 'group', 'aria-label': 'Mode' },
+      ['selling', 'buying'].map((m) => h('button', { type: 'button', 'aria-pressed': String(state.mode === m), onclick: () => setMode(m) }, m === 'selling' ? 'Selling' : 'Buying')));
+  }
+  function walletButton() {
+    if (state.account && wrongNetwork()) return h('button', { class: 'btn coral', type: 'button', onclick: switchNow }, 'Switch to BOT Chain');
+    if (state.account) return h('a', { class: 'btn', href: '#/me', title: state.account }, h('span', { class: 'dot' }), state.me?.name ? state.me.name.slice(0, 14) : short(state.account));
+    if (!window.ethereum && !PREVIEW) return extLink('https://metamask.io/download/', 'Install MetaMask ↗', 'btn');
+    return h('button', { class: 'btn', type: 'button', onclick: signIn }, 'Sign in');
+  }
+  function startSell() { go('#/sell'); }
+
+  function renderHeader() {
+    const selling = state.mode === 'selling';
+    $('head-links').replaceChildren(...[
+      modeToggle(),
+      selling && h('button', { class: 'btn outline sell-full', type: 'button', onclick: startSell }, '+ Sell'),
+      selling && h('button', { class: 'btn outline sell-mini', type: 'button', onclick: startSell, 'aria-label': 'Sell an item' }, '+'),
+      state.account && h('a', { class: 'btn me-link', href: '#/me' }, 'My stuff'),
+      walletButton(),
+    ].filter(Boolean));
+    const r = route().name;
+    const icon = {
+      home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+      me: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
+    };
+    $('dock').replaceChildren(
+      h('a', { href: '#/', 'aria-current': r === 'home' ? 'page' : false }, svg(icon.home), 'Home'),
+      modeToggle(),
+      h('a', { href: '#/me', 'aria-current': r === 'me' ? 'page' : false }, svg(icon.me), 'My stuff'),
+    );
+  }
+
+  function renderFooter() {
+    const contract = MAINNET.contract;
+    $('footer').replaceChildren(
+      dropBar('Built on BOT Chain', 'footer', 'The chain behind every sale'),
+      h('div', { id: 'footer-drop', hidden: !footerOpen },
+        h('a', { class: 'chain-card', href: 'https://botchain.ai', target: '_blank', rel: 'noopener', 'aria-label': 'BOT Chain — opens botchain.ai' },
+          h('div', { class: 'stage' }, h('img', { src: 'images/bot-chain-black.png', alt: 'BOT Chain logo', width: 170, height: 170 })),
+          h('div', { class: 'body' },
+            h('div', {}, h('b', {}, 'BOT Chain'), h('span', { class: 'cap' }, '[CHAIN ID 677]')),
+            h('span', { class: 'price', title: contract || 'Contract not deployed yet' }, contract ? short(contract) : 'DEPLOYING SOON'))),
+        h('div', { class: 'foot-cta' },
+          extLink(contract ? `${MAINNET.explorer}/address/${contract}` : MAINNET.explorer, 'View on explorer ↗', 'btn outline big'))),
+      h('p', { class: 'legal' }, '© RESOLE 2026 · PEER-TO-PEER SALES · NO REFUNDS ON-CHAIN'),
+    );
+  }
+  let footerOpen = true;
+
+  function dropBar(text, which, sub) {
+    const open = which === 'footer' ? footerOpen : state.dropsOpen;
+    return h('button', {
+      class: 'dropbar', type: 'button', 'aria-expanded': String(open), 'aria-controls': which === 'footer' ? 'footer-drop' : 'drops',
+      onclick: () => {
+        if (which === 'footer') { footerOpen = !footerOpen; renderFooter(); }
+        else { state.dropsOpen = !state.dropsOpen; render(); }
+      },
+    }, h('span', {}, text, sub && h('small', {}, sub)), h('span', { class: 'chev', 'aria-hidden': 'true' }, '⌄'));
+  }
+
+  // ============================================================
+  // Cards
+  // ============================================================
+  function card(item, { rank = null } = {}) {
+    const sold = isSold(item);
+    const img = photo(item.photos[0], item.title);
+    let idx = 0;
+    const dots = item.photos.length > 1 && h('div', { class: 'pager' }, item.photos.map((p, i) => h('button', {
+      type: 'button', 'aria-label': `Photo ${i + 1} of ${item.photos.length}`, 'aria-current': String(i === 0),
+      onclick: (e) => {
+        e.preventDefault(); e.stopPropagation();
+        idx = i;
+        const next = photo(item.photos[idx], item.title);
+        media.querySelector('img, .ph')?.replaceWith(next);
+        dots.querySelectorAll('button').forEach((b, j) => b.setAttribute('aria-current', String(j === idx)));
+      },
+    })));
+    const fresh = Date.now() / 1000 - item.listedAt < 86400;
+    const media = h('div', { class: 'media' },
+      img,
+      rank != null && h('span', { class: 'rank' }, String(rank), fresh && h('span', { class: 'up', 'aria-label': 'new today' }, '↑')),
+      isMine(item) && h('span', { class: 'tag' }, 'YOURS'),
+      dots,
+      sold && h('div', { class: 'stamp' }, 'SOLD'));
+    return h('a', { class: 'card' + (sold ? ' sold' : ''), href: `#/item/${item.id}`, 'aria-label': `${item.title}, ${priceLabel(item)}${sold ? ', sold' : ''}` },
+      media,
+      h('div', { class: 'body' },
+        h('div', { class: 'who' }, avatar(item.seller, nameOf(item.seller)), h('span', {}, nameOf(item.seller))),
+        h('div', { class: 'title' }, item.title),
+        h('div', { class: 'meta' }, h('span', { class: 'cap' }, caption(item)), priceEl(item))));
+  }
+  const skeletons = (n) => Array.from({ length: n }, () => h('div', { class: 'card skeleton', 'aria-hidden': 'true' },
+    h('div', { class: 'media' }), h('div', { class: 'body' }, h('div', { class: 'line', style: 'width:50%' }), h('div', { class: 'line', style: 'width:80%' }), h('div', { class: 'line', style: 'width:65%' }))));
+
+  // ============================================================
+  // Views
+  // ============================================================
+  function loadErrorView() {
+    return h('div', { class: 'empty' }, h('b', {}, 'Could not load the shop'), state.loadError,
+      h('div', {}, h('button', { class: 'btn outline', type: 'button', onclick: () => refresh() }, 'Try again')));
+  }
+
+  function homeView() {
+    const selling = state.mode === 'selling';
+    const newest = state.items.filter((i) => !isSold(i) && i.photos[0] && photoSrc(i.photos[0])).sort((a, b) => b.listedAt - a.listedAt).slice(0, 3);
+    // An empty shop still gets a product stack, built from the bundled demo photos with no prices.
+    const fallback = ['19-white-leather-sneakers', '22-red-rain-boots', '07-black-white-windbreaker-jacket'].map((f) => `images/demo/${f}.jpg`);
+    const stackCards = [0, 1, 2].map((i) => {
+      const item = newest[i];
+      const inner = [
+        item ? photo(item.photos[0], item.title) : h('img', { src: fallback[i], alt: '' }),
+        h('div', { class: 'ft' }, h('span', {}, item ? item.title : 'Your pair here'), h('span', { class: 'pt' }, item ? priceLabel(item) : 'List it')),
+      ];
+      return item
+        ? h('a', { class: `float f${i}`, href: `#/item/${item.id}`, 'aria-label': `${item.title}, ${priceLabel(item)}` }, inner)
+        : h('div', { class: `float f${i}`, 'aria-hidden': 'true' }, inner);
+    });
+    const blurSrc = stackCards.map((c) => c.querySelector('img')?.src).filter(Boolean);
+    const soldCount = state.items.filter(isSold).length;
+    const shopNow = () => { setMode('buying', { quiet: true }); $('shop')?.scrollIntoView({ behavior: 'smooth' }); };
+    const sellNow = () => { setMode('selling', { quiet: true }); startSell(); };
+    const hero = h('section', { class: 'hero', 'aria-label': 'Resole' },
+      h('div', { class: 'blur', 'aria-hidden': 'true' }, blurSrc.map((src) => h('img', { src, alt: '' }))),
+      h('div', { class: 'copy' },
+        h('span', { class: 'live' }, h('i', { 'aria-hidden': 'true' }), `Live on ${NET.name} · ${selling ? 'Selling mode' : 'Buying mode'}`),
+        selling
+          ? h('h2', {}, 'Your old pair,', h('em', {}, 'someone’s next.'))
+          : h('h2', {}, 'Second-hand.', h('em', {}, 'First-class.')),
+        h('p', {}, selling
+          ? 'Snap 1–3 photos, set your own price in BOT or USDT, and get paid straight to your wallet. No platform fee, ever.'
+          : 'Pre-loved shoes and apparel, priced by their owners. Pay in BOT or USDT and the money lands straight in the seller’s wallet.'),
+        h('div', { class: 'ctas' },
+          selling
+            ? [h('button', { class: 'btn coral big', type: 'button', onclick: sellNow }, 'Start selling'), h('button', { class: 'btn ghost big', type: 'button', onclick: shopNow }, 'Start shopping')]
+            : [h('button', { class: 'btn coral big', type: 'button', onclick: shopNow }, 'Start shopping'), h('button', { class: 'btn ghost big', type: 'button', onclick: sellNow }, 'Start selling')]),
+        h('div', { class: 'stats' },
+          h('div', {}, h('b', {}, state.loaded ? String(state.items.length - soldCount) : '–'), h('small', {}, 'Available')),
+          h('div', {}, h('b', {}, state.loaded ? String(soldCount) : '–'), h('small', {}, 'Sold forever')),
+          h('div', {}, h('b', {}, '0%'), h('small', {}, 'Platform fee')))),
+      h('div', { class: 'stack' }, stackCards));
+
+    const available = state.items.filter((i) => !isSold(i)).sort((a, b) => b.listedAt - a.listedAt).slice(0, 8);
+    const drops = h('div', { id: 'drops', hidden: !state.dropsOpen },
+      !state.loaded ? h('div', { class: 'carousel' }, skeletons(4))
+        : available.length ? h('div', { class: 'carousel' }, available.map((item, i) => card(item, { rank: i + 1 })))
+          : h('div', { class: 'empty' }, h('b', {}, 'No fresh drops yet'), 'Be the first to list something.'));
+
+    let list = state.items.slice().sort((a, b) => b.listedAt - a.listedAt);
+    if (state.kind !== 'all') list = list.filter((i) => i.kind === (state.kind === 'shoes' ? 0 : 1));
+    if (state.status === 'available') list = list.filter((i) => !isSold(i));
+    if (state.status === 'sold') list = list.filter(isSold);
+    const chip = (group, value, label) => h('button', {
+      type: 'button', class: 'chip-btn', 'aria-pressed': String(state[group] === value),
+      onclick: () => { state[group] = state[group] === value && value !== 'all' ? 'all' : value; render(); },
+    }, label);
+
+    return [
+      h('h1', { class: 'hello' }, 'Welcome to Resole'),
+      hero,
+      dropBar("Today's fresh drops", 'drops', 'Newest available listings'),
+      drops,
+      h('div', { class: 'filters', id: 'shop' },
+        h('h3', {}, 'All listings'),
+        h('div', { class: 'chips', role: 'group', 'aria-label': 'Filters' },
+          chip('kind', 'all', 'All'), chip('kind', 'shoes', 'Shoes'), chip('kind', 'apparel', 'Apparel'),
+          h('span', { class: 'chip-sep', 'aria-hidden': 'true' }),
+          chip('status', 'available', 'Available'), chip('status', 'sold', 'Sold'))),
+      state.loadError && !state.loaded ? loadErrorView()
+        : !state.loaded ? h('div', { class: 'grid' }, skeletons(8))
+          : list.length ? h('div', { class: 'grid' }, list.map((i) => card(i)))
+            : h('div', { class: 'empty' }, h('b', {}, state.items.length ? 'Nothing matches these filters' : 'The shop is empty'),
+              state.items.length ? 'Try another filter.' : 'List the first pair and it lives on BOT Chain forever.',
+              !state.items.length && h('div', {}, h('button', { class: 'btn coral', type: 'button', onclick: () => { setMode('selling', { quiet: true }); startSell(); } }, '+ Sell'))),
+    ];
+  }
+
+  // ---------- item page ----------
+  function itemView(id) {
+    if (!state.loaded) return state.loadError ? loadErrorView() : h('div', { class: 'grid' }, skeletons(2));
+    const item = state.items[id];
+    if (!item) {
+      return [h('a', { class: 'back', href: '#/' }, '← Back to shop'),
+        h('div', { class: 'empty' }, h('b', {}, 'Item not found'), `There is no listing #${id} on ${NET.name}.`)];
+    }
+    const sold = isSold(item);
+    const seller = state.profiles.get(item.seller.toLowerCase());
+    let current = 0;
+    const main = h('div', { class: 'media' }, photo(item.photos[0], item.title), sold && h('div', { class: 'stamp big' }, 'SOLD'));
+    const thumbs = item.photos.length > 1 && h('div', { class: 'thumbs' }, item.photos.map((p, i) => h('button', {
+      type: 'button', 'aria-label': `Show photo ${i + 1}`, 'aria-current': String(i === 0),
+      onclick: () => {
+        current = i;
+        main.firstChild.replaceWith(photo(item.photos[i], item.title));
+        thumbs.querySelectorAll('button').forEach((b, j) => b.setAttribute('aria-current', String(j === current)));
+      },
+    }, photo(p, ''))));
+
+    return [
+      h('a', { class: 'back', href: '#/' }, '← Back to shop'),
+      h('div', { class: 'item' },
+        h('div', { class: 'gallery' }, main, thumbs),
+        h('div', {},
+          h('div', { class: 'cap' }, `${KINDS[item.kind]} · Listing #${item.id} · listed ${ago(item.listedAt)}`),
+          h('h1', {}, item.title),
+          h('div', { class: 'facts' },
+            h('div', {}, h('small', {}, 'Size'), h('b', {}, item.size)),
+            h('div', {}, h('small', {}, 'Condition'), h('b', {}, CONDITIONS[item.condition])),
+            h('div', {}, h('small', {}, 'Type'), h('b', {}, KINDS[item.kind]))),
+          item.description && h('p', { class: 'desc' }, item.description),
+          h('div', { class: 'panel' },
+            h('div', { class: 'lbl' }, h('span', {}, sold ? 'Sold for' : 'Price')),
+            h('div', { class: 'bigprice' }, priceEl(item, '')),
+            buyBlock(item)),
+          h('div', { class: 'panel' },
+            h('div', { class: 'seller-box' }, avatar(item.seller, seller?.name),
+              h('div', {}, h('small', { class: 'cap' }, 'Seller'), h('b', {}, seller?.name || 'Unnamed seller'), h('div', { class: 'addr' }, addrLink(item.seller)))),
+            seller?.contact && h('div', { class: 'contact' }, h('div', {}, h('small', {}, 'PUBLIC CONTACT'), seller.contact), copyBtn(seller.contact))),
+          h('div', { class: 'notice' }, h('b', {}, 'PEER-TO-PEER · NO ESCROW · NO REFUNDS. '),
+            'Payment goes straight to the seller\'s wallet. You arrange delivery with the seller yourselves. Every sale is final.'))),
+    ];
+  }
+
+  function copyBtn(text) {
+    return h('button', { class: 'btn', type: 'button', onclick: async (e) => {
+      try { await navigator.clipboard.writeText(text); e.currentTarget.textContent = 'Copied'; } catch { toast('Could not copy. Select the text instead.'); }
+    } }, 'Copy');
+  }
+
+  function buyBlock(item) {
+    const sold = isSold(item);
+    if (sold) {
+      const buyer = state.profiles.get(item.buyer.toLowerCase());
+      const txSlot = h('span', {});
+      fillSaleTx(item.id, txSlot);
+      const tooLate = state.buy?.id === item.id && state.buy.error && !same(item.buyer, state.account);
+      return h('div', {},
+        tooLate && h('div', { class: 'status err', role: 'alert', style: 'font-size:14px;margin:0 0 8px' }, state.buy.error),
+        h('div', { class: 'status' },
+          same(item.buyer, state.account) ? 'You bought this ' : `Bought by ${buyer?.name || short(item.buyer)} `,
+          `${ago(item.soldAt)} · `, addrLink(item.buyer), ' · ', txSlot));
+    }
+    if (isMine(item)) return h('div', { class: 'yours-box' }, 'Your listing');
+
+    const b = state.buy?.id === item.id ? state.buy : { id: item.id, step: 'idle' };
+    const busy = !['idle', 'error'].includes(b.step);
+    const usdt = item.currency === 1;
+    const label = {
+      idle: `Buy for ${priceLabel(item)}`,
+      error: `Buy for ${priceLabel(item)}`,
+      checking: 'Checking…',
+      approve: '1/2 · Approve USDT in MetaMask…',
+      approving: '1/2 · Approving USDT…',
+      buy: (usdt ? '2/2 · ' : '') + 'Confirm in MetaMask…',
+      confirm: (usdt ? '2/2 · ' : '') + `Buying on ${NET.name}…`,
+    }[b.step];
+    const approvedDone = b.approved || ['buy', 'confirm'].includes(b.step);
+    const stepper = usdt && h('div', { class: 'steps', 'aria-label': 'USDT takes two steps' },
+      h('span', { class: ['approve', 'approving'].includes(b.step) ? 'on' : approvedDone ? 'done' : '' }, (approvedDone ? '✓ ' : '') + '1/2 Approve'),
+      h('span', { 'aria-hidden': 'true' }, '→'),
+      h('span', { class: ['buy', 'confirm'].includes(b.step) ? 'on' : '' }, '2/2 Buy'));
+    const needs = wrongNetwork();
+    return h('div', {},
+      stepper,
+      needs ? h('button', { class: 'btn coral big block', type: 'button', onclick: switchNow }, 'Switch to BOT Chain')
+        : h('button', { class: 'btn coral big block', type: 'button', disabled: busy, onclick: () => buyItem(item.id) }, label),
+      b.error && h('div', { class: 'status err', role: 'alert' }, b.error),
+      b.hash && busy && h('div', { class: 'status' }, txLink(b.hash, 'Pending tx ↗')),
+      !b.error && !busy && h('div', { class: 'status' }, usdt
+        ? 'Paying in USDT takes two MetaMask steps: approve, then buy. You need a little BOT for gas.'
+        : 'One MetaMask transaction for the exact amount, plus a little BOT for gas.'));
+  }
+
+  const saleTxCache = new Map();
+  async function fillSaleTx(id, slot) {
+    const known = state.hashes['sold:' + id] || saleTxCache.get(id);
+    if (known) return slot.replaceChildren(txLink(known));
+    slot.replaceChildren(h('span', { class: 'muted' }, 'finding tx…'));
+    try {
+      const hash = await store.saleTx(id);
+      if (hash) saleTxCache.set(id, hash);
+      slot.replaceChildren(hash ? txLink(hash) : extLink(`${NET.explorer}/address/${NET.contract}`, 'contract ↗'));
+    } catch {
+      slot.replaceChildren(extLink(`${NET.explorer}/address/${NET.contract}`, 'contract ↗'));
+    }
+  }
+
+  function setBuy(patch) {
+    state.buy = { ...(state.buy || {}), ...patch };
+    if (route().name === 'item') render();
+  }
+
+  async function buyItem(id) {
+    if (state.mode !== 'buying') setMode('buying', { quiet: true });
+    state.buy = { id, step: 'idle' };
+    if (!(await ensureReady({ needProfile: true }))) return render();
+    const listed = state.items[id];
+    if (listed && isMine(listed)) return render();
+
+    setBuy({ id, step: 'checking', error: null, hash: null });
+    try {
+      const item = await store.item(id);
+      if (!item) return setBuy({ step: 'error', error: 'Item not found.' });
+      if (isSold(item)) {
+        setBuy({ step: 'error', error: 'Just sold — too late! No money was taken.' });
+        return refresh({ quiet: true });
+      }
+      if (isMine(item)) return setBuy({ step: 'idle' });
+      const [bal, allowance] = await Promise.all([store.balances(state.account), item.currency === 1 ? store.allowance(state.account) : 0n]);
+      const need = `You need ${priceLabel(item)} + a little BOT for gas.`;
+      if (item.currency === 0 ? bal.bot <= item.price : bal.usdt < item.price || bal.bot === 0n) return setBuy({ step: 'error', error: need });
+      setBuy({ approved: item.currency === 1 && allowance >= item.price });
+
+      const hash = await store.buy(item, (step, txHash) => setBuy({ step, hash: txHash || null, ...(step === 'buy' ? { approved: true } : {}) }));
+      state.hashes['sold:' + id] = hash;
+      state.buy = null;
+      go(`#/bought/${id}`);
+      refresh({ quiet: true });
+    } catch (e) {
+      console.error(e);
+      const name = e?.revert?.name || parseRevert(e);
+      setBuy({ step: 'error', hash: null, error: explain(e) });
+      if (name === 'AlreadySold') refresh({ quiet: true });
+    }
+  }
+
+  // ---------- bought (success) ----------
+  function boughtView(id) {
+    if (!state.loaded) return h('div', { class: 'grid' }, skeletons(1));
+    const item = state.items[id];
+    if (!item) return h('div', { class: 'empty' }, h('b', {}, 'Item not found'));
+    const seller = state.profiles.get(item.seller.toLowerCase());
+    const txSlot = h('span', {});
+    fillSaleTx(id, txSlot);
+    return h('section', { class: 'success' },
+      h('div', { class: 'media' }, photo(item.photos[0], item.title)),
+      h('div', { class: 'cap' }, `${item.title} · ${priceLabel(item)}`),
+      h('h1', {}, "It's yours."),
+      h('p', {}, 'Payment sent to the seller. ', txSlot),
+      h('div', { class: 'panel' },
+        h('div', { class: 'seller-box' }, avatar(item.seller, seller?.name),
+          h('div', {}, h('small', { class: 'cap' }, 'Arrange delivery with'), h('b', {}, seller?.name || 'the seller'), h('div', { class: 'addr' }, addrLink(item.seller)))),
+        seller?.contact
+          ? h('div', { class: 'contact' }, h('div', {}, h('small', {}, 'PUBLIC CONTACT'), seller.contact), copyBtn(seller.contact))
+          : h('div', { class: 'contact' }, h('div', {}, h('small', {}, 'PUBLIC CONTACT'), 'This seller has not added a contact handle. Look them up by wallet on the explorer.'))),
+      h('div', { class: 'notice' }, 'Share only what delivery needs, and only in a private chat. Never post your address on-chain.'),
+      h('div', { class: 'ctas', style: 'margin-top:20px' },
+        h('a', { class: 'btn outline big', href: `#/item/${id}` }, 'View item'),
+        h('a', { class: 'btn big', href: '#/me/purchases' }, 'My purchases')));
+  }
+
+  // ---------- my stuff ----------
+  function meView(tab) {
+    if (!state.account) {
+      return h('div', { class: 'empty', style: 'margin-top:32px' }, h('b', {}, 'Sign in to see your stuff'),
+        'Your listings and purchases live on BOT Chain under your wallet.',
+        h('div', {}, h('button', { class: 'btn coral', type: 'button', onclick: signIn }, 'Sign in')));
+    }
+    if (!state.loaded) return h('div', { class: 'grid' }, skeletons(3));
+    const mine = state.items.filter(isMine).sort((a, b) => b.listedAt - a.listedAt);
+    const bought = state.items.filter((i) => same(i.buyer, state.account)).sort((a, b) => b.soldAt - a.soldAt);
+    const avail = mine.filter((i) => !isSold(i));
+    const soldMine = mine.filter(isSold);
+    const shown = tab === 'purchases' ? bought : state.sub === 'sold' ? soldMine : avail;
+
+    const row = (item) => {
+      const sold = isSold(item);
+      const other = tab === 'purchases' ? item.seller : item.buyer;
+      const p = sold ? state.profiles.get(other.toLowerCase()) : null;
+      const txSlot = h('span', {});
+      if (sold) fillSaleTx(item.id, txSlot);
+      return h('div', { class: 'row' + (sold && tab !== 'purchases' ? ' sold' : '') },
+        h('a', { class: 'media', href: `#/item/${item.id}` }, photo(item.photos[0], item.title)),
+        h('div', { style: 'min-width:0' },
+          h('a', { class: 'title', href: `#/item/${item.id}` }, item.title),
+          h('div', { class: 'sub' }, `${caption(item)} · ${priceLabel(item)}`),
+          sold && h('div', { class: 'sub' }, tab === 'purchases' ? 'Seller ' : 'Buyer ', h('b', {}, p?.name || 'unnamed'), ' · ', addrLink(other),
+            p?.contact ? ` · ${p.contact}` : '', ' · ', ago(item.soldAt), ' · ', txSlot),
+          !sold && h('div', { class: 'sub' }, `Listed ${ago(item.listedAt)}`)),
+        h('span', { class: 'pill ' + (sold ? 'gone' : 'live') }, tab === 'purchases' ? 'Bought' : sold ? 'Sold' : 'Available'));
+    };
+
+    return [
+      h('div', { class: 'me-head' },
+        h('div', { class: 'seller-box' }, avatar(state.account, state.me?.name),
+          h('div', {}, h('b', {}, state.me?.name || 'No profile yet'), h('div', { class: 'addr' }, addrLink(state.account), state.me?.contact ? ` · ${state.me.contact}` : ''))),
+        h('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' },
+          h('button', { class: 'btn', type: 'button', onclick: async () => { if (await ensureReady()) profileModal({ editing: !!state.me }); } }, state.me ? 'Edit profile' : 'Create profile'),
+          h('button', { class: 'btn outline', type: 'button', onclick: () => { setMode('selling', { quiet: true }); startSell(); } }, '+ Sell'))),
+      h('div', { class: 'tabs', role: 'tablist' },
+        h('button', { role: 'tab', type: 'button', 'aria-selected': String(tab === 'listings'), onclick: () => go('#/me') }, `My listings (${mine.length})`),
+        h('button', { role: 'tab', type: 'button', 'aria-selected': String(tab === 'purchases'), onclick: () => go('#/me/purchases') }, `My purchases (${bought.length})`)),
+      tab === 'listings' && h('div', { class: 'chips', style: 'margin-bottom:14px' },
+        ['available', 'sold'].map((s) => h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(state.sub === s), onclick: () => { state.sub = s; render(); } },
+          `${s} (${s === 'sold' ? soldMine.length : avail.length})`))),
+      shown.length ? h('div', { class: 'rows' }, shown.map(row))
+        : h('div', { class: 'empty' }, tab === 'purchases'
+          ? [h('b', {}, 'No purchases yet'), 'Find something you love in the shop.', h('div', {}, h('a', { class: 'btn coral', href: '#/' }, 'Browse'))]
+          : state.sub === 'sold' ? [h('b', {}, 'Nothing sold yet'), 'Sold items show the buyer and the transaction here.']
+            : [h('b', {}, 'Nothing listed'), 'Snap a pair you no longer wear and set your price.', h('div', {}, h('button', { class: 'btn coral', type: 'button', onclick: () => { setMode('selling', { quiet: true }); startSell(); } }, '+ Sell'))]),
+    ];
+  }
+
+  // ---------- sell ----------
+  const draft = {
+    photos: [], // { blob, url, cid, error, uploading }
+    title: '', kind: 0, size: '', condition: 1, description: '', price: '', currency: 0,
+    stage: 'form', // form → confirm → working
+    agreed: false, errors: {}, progress: null,
+  };
+  function resetDraft() {
+    draft.photos.forEach((p) => URL.revokeObjectURL(p.url));
+    Object.assign(draft, { photos: [], title: '', kind: 0, size: '', condition: 1, description: '', price: '', currency: 0, stage: 'form', agreed: false, errors: {}, progress: null });
+  }
+
+  function validateDraft() {
+    const e = {};
+    draft.photoError = null;
+    if (!draft.photos.length) e.photos = 'Add at least one photo.';
+    if (!draft.title.trim()) e.title = 'Give it a title.';
+    else if (bytes(draft.title.trim()) > LIMITS.title) e.title = `Keep it under ${LIMITS.title} characters.`;
+    if (!draft.size.trim()) e.size = 'Add a size, e.g. 42, US 9 or M.';
+    else if (bytes(draft.size.trim()) > LIMITS.size) e.size = `Keep it under ${LIMITS.size} characters.`;
+    if (bytes(draft.description) > LIMITS.description) e.description = `Keep it under ${LIMITS.description} characters.`;
+    const dec = decimalsOf(draft.currency);
+    const m = /^(\d+)(?:\.(\d+))?$/.exec(draft.price.trim());
+    if (!m) e.price = 'Enter a price, e.g. 25 or 12.5.';
+    else if ((m[2] || '').length > dec) e.price = `Use at most ${dec} decimals.`;
+    else if (ethers.parseUnits(draft.price.trim(), dec) === 0n) e.price = 'Set a price above zero.';
+    if (draft.currency === 1 && !state.usdt.enabled) e.price = 'USDT is not available. Price it in BOT.';
+    draft.errors = e;
+    return !Object.keys(e).length;
+  }
+  const draftPrice = () => ethers.parseUnits(draft.price.trim(), decimalsOf(draft.currency));
+
+  function sellView() {
+    if (!state.account || !state.me) {
+      return h('div', { class: 'empty', style: 'margin-top:32px' }, h('b', {}, 'Sign in to sell'),
+        'You need a wallet and a profile (display name + optional contact) to list an item.',
+        h('div', {}, h('button', { class: 'btn coral', type: 'button', onclick: async () => { if (await ensureReady({ needProfile: true })) render(); } }, 'Sign in')));
+    }
+    if (!PREVIEW && !CONFIG.uploadUrl) {
+      return h('div', { class: 'empty', style: 'margin-top:32px' }, h('b', {}, 'Photo uploads are not set up yet'), 'The site owner needs to add the upload Worker URL before items can be listed.');
+    }
+    if (draft.stage !== 'form') return confirmView();
+
+    const err = (k) => draft.errors[k] && h('div', { class: 'err-text', role: 'alert' }, draft.errors[k]);
+    const field = (key, label, max, props = {}) => {
+      const counter = h('span', {}, `${bytes(draft[key])}/${max}`);
+      const input = h(props.multiline ? 'textarea' : 'input', {
+        type: props.multiline ? null : 'text', value: draft[key], placeholder: props.placeholder || '', maxlength: max, autocomplete: 'off', inputmode: props.inputmode || null,
+        oninput: (e) => { draft[key] = e.target.value; counter.textContent = `${bytes(draft[key])}/${max}`; updatePreview(); },
+      });
+      return h('label', { class: 'f' }, h('span', {}, label, max && counter), input, err(key));
+    };
+    const opts = (key, labels) => h('div', { class: 'opts', role: 'group' }, labels.map((l, i) => h('button', {
+      type: 'button', class: 'chip-btn', 'aria-pressed': String(draft[key] === i), onclick: () => { draft[key] = i; render(); },
+    }, l)));
+
+    const fileInput = h('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp', hidden: true, onchange: (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) addPhoto(f); } });
+    const slots = Array.from({ length: LIMITS.photos }, (_, i) => {
+      const p = draft.photos[i];
+      if (p) {
+        return h('div', { class: 'slot' }, h('img', { src: p.url, alt: `Photo ${i + 1}` }),
+          i === 0 && h('span', { class: 'cover' }, 'COVER'),
+          h('button', { class: 'x', type: 'button', 'aria-label': `Remove photo ${i + 1}`, onclick: () => { URL.revokeObjectURL(p.url); draft.photos.splice(i, 1); render(); } }, '×'));
+      }
+      if (i === draft.photos.length) return h('button', { class: 'slot', type: 'button', onclick: () => fileInput.click() }, i === 0 ? '+ Add photo\nJPG · PNG · WebP' : '+ Add');
+      return h('div', { class: 'slot', 'aria-hidden': 'true', style: 'cursor:default;opacity:.4' });
+    });
+
+    const previewSlot = h('div', {});
+    function updatePreview() {
+      let price = 0n;
+      try { price = /^\d+(\.\d+)?$/.test(draft.price.trim()) ? draftPrice() : 0n; } catch { price = 0n; }
+      const fake = {
+        id: -1, seller: state.account, title: draft.title.trim() || 'Your item title', kind: draft.kind, size: draft.size.trim() || '—',
+        condition: draft.condition, photos: [], currency: draft.currency, price, buyer: ZERO, listedAt: Date.now() / 1000,
+      };
+      const c = card(fake);
+      c.removeAttribute('href');
+      const media = c.querySelector('.media');
+      media.querySelector('img, .ph')?.replaceWith(draft.photos[0] ? h('img', { src: draft.photos[0].url, alt: '' }) : h('div', { class: 'ph' }, 'COVER PHOTO'));
+      previewSlot.replaceChildren(c);
+    }
+    updatePreview();
+
+    return [
+      h('a', { class: 'back', href: '#/' }, '← Back to shop'),
+      h('h1', { class: 'page-title' }, 'Sell an item'),
+      h('p', { class: 'muted', style: 'margin:0 0 24px' }, 'You set the price. Buyers pay you directly in BOT or USDT. No platform fee.'),
+      h('div', { class: 'sell' },
+        h('form', { class: 'form', novalidate: true, onsubmit: (e) => { e.preventDefault(); if (validateDraft()) { draft.stage = 'confirm'; draft.agreed = false; } render(); window.scrollTo({ top: 0 }); } },
+          h('div', { class: 'f' }, h('span', { class: 'lbl' }, 'Photos (1–3)', h('span', {}, `${draft.photos.length}/3`)), h('div', { class: 'photos' }, slots), fileInput,
+            draft.photoError && h('div', { class: 'err-text', role: 'alert' }, draft.photoError), err('photos'),
+            h('div', { class: 'cap' }, 'Square crop · max 5 MB each · location data is removed')),
+          field('title', 'Title', LIMITS.title, { placeholder: 'e.g. White leather sneakers' }),
+          h('div', { class: 'f' }, h('span', { class: 'lbl' }, 'Type'), opts('kind', KINDS)),
+          field('size', 'Size', LIMITS.size, { placeholder: 'e.g. 42, US 9, M' }),
+          h('div', { class: 'f' }, h('span', { class: 'lbl' }, 'Condition'), opts('condition', CONDITIONS)),
+          field('description', 'Description (optional)', LIMITS.description, { multiline: true, placeholder: 'Fit, flaws, how often worn, what is included…' }),
+          h('div', { class: 'f' }, h('span', { class: 'lbl' }, 'Your price'),
+            h('div', { class: 'price-row' },
+              h('input', { type: 'text', inputmode: 'decimal', value: draft.price, placeholder: '0', 'aria-label': 'Price', autocomplete: 'off', oninput: (e) => { draft.price = e.target.value.replace(',', '.'); updatePreview(); } }),
+              state.usdt.enabled ? opts('currency', CURRENCIES) : h('div', { class: 'opts' }, h('span', { class: 'chip-btn', 'aria-pressed': 'true', style: 'display:inline-flex;align-items:center' }, 'BOT'))),
+            err('price')),
+          h('button', { class: 'btn coral big block', type: 'submit' }, 'Review listing')),
+        h('aside', { class: 'preview-card' }, h('div', { class: 'lbl' }, 'Card preview'), previewSlot,
+          h('div', { class: 'notice' }, h('b', {}, 'Privacy: '), 'everything here is public forever. Never include your home address or phone number.'))),
+    ];
+  }
+
+  function confirmView() {
+    const working = draft.stage === 'working';
+    const p = draft.progress || {};
+    const fake = {
+      id: -1, seller: state.account, title: draft.title.trim(), kind: draft.kind, size: draft.size.trim(),
+      condition: draft.condition, photos: [], currency: draft.currency, price: draftPrice(), buyer: ZERO, listedAt: Date.now() / 1000,
+    };
+    const c = card(fake);
+    c.removeAttribute('href');
+    c.querySelector('.media img, .media .ph')?.replaceWith(h('img', { src: draft.photos[0].url, alt: '' }));
+
+    const line = (status, text) => h('div', { class: status }, h('i', { 'aria-hidden': 'true' }, { done: '✓', on: '●', bad: '!', '': '○' }[status]), text);
+    const up = p.upload || '';
+    const steps = h('div', { class: 'progress', 'aria-live': 'polite' },
+      draft.photos.map((ph, i) => line(ph.cid ? 'done' : ph.error ? 'bad' : ph.uploading ? 'on' : '', `Photo ${i + 1}: ${ph.cid ? 'pinned to IPFS' : ph.error ? ph.error : ph.uploading ? 'uploading…' : 'waiting'}`)),
+      line(p.chain === 'done' ? 'done' : p.chain ? 'on' : '', p.chain === 'sign' ? 'Confirm in MetaMask…' : p.chain === 'confirm' ? `Listing on ${NET.name}…` : p.chain === 'done' ? 'Listed' : 'List on BOT Chain'),
+      p.hash && h('div', {}, h('i', {}, ''), txLink(p.hash, 'Pending tx ↗')));
+
+    return [
+      h('button', { class: 'back', type: 'button', style: 'background:none;border:0;cursor:pointer;padding:0', disabled: working, onclick: () => { draft.stage = 'form'; render(); } }, '← Edit listing'),
+      h('h1', { class: 'page-title' }, 'Check your listing'),
+      h('div', { class: 'sell', style: 'margin-top:20px' },
+        h('div', {},
+          h('div', { class: 'perm' },
+            h('h3', {}, 'This listing is permanent.'),
+            h('p', {}, "Once on BOT Chain it can't be edited, removed or re-priced. Photos are pinned to IPFS and stay public."),
+            h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: draft.agreed, disabled: working, onchange: (e) => { draft.agreed = e.target.checked; render(); } }),
+              h('span', {}, `I understand. List "${draft.title.trim()}" for ${fmtAmount(fake.price, fake.currency)} ${CURRENCIES[fake.currency]}, forever.`))),
+          h('div', { class: 'panel', style: 'margin-top:12px' },
+            h('div', { class: 'facts' },
+              h('div', {}, h('small', {}, 'Size'), h('b', {}, fake.size)),
+              h('div', {}, h('small', {}, 'Condition'), h('b', {}, CONDITIONS[fake.condition])),
+              h('div', {}, h('small', {}, 'Type'), h('b', {}, KINDS[fake.kind]))),
+            draft.description.trim() && h('p', { class: 'desc' }, draft.description.trim()),
+            h('div', { class: 'cap', style: 'margin-top:12px' }, `${draft.photos.length} photo${draft.photos.length > 1 ? 's' : ''} · seller ${state.me?.name}`)),
+          up === 'failed' || p.error ? h('div', { class: 'status err', role: 'alert' }, p.error || 'A photo did not upload. Nothing was listed. Try again.') : null,
+          (working || p.started) && steps,
+          h('button', { class: 'btn coral big block', type: 'button', style: 'margin-top:16px', disabled: !draft.agreed || working, onclick: publish },
+            working ? 'Working…' : p.started ? 'Try again' : 'Upload photos & list')),
+        h('aside', { class: 'preview-card' }, h('div', { class: 'lbl' }, 'How buyers will see it'), c)),
+    ];
+  }
+
+  async function uploadPhoto(ph) {
+    if (PREVIEW && !CONFIG.uploadUrl) {
+      // No Worker in preview: keep a small copy in this browser instead of pinning.
+      return shrinkToDataUrl(ph.blob, 560);
+    }
+    const form = new FormData();
+    form.append('file', ph.blob, 'photo.' + (ph.blob.type === 'image/webp' ? 'webp' : 'jpg'));
+    let res;
+    try { res = await fetch(CONFIG.uploadUrl, { method: 'POST', body: form }); } catch { throw friendly('Network error'); }
+    const body = await res.json().catch(() => ({}));
+    if (res.ok && body.cid) return body.cid;
+    throw friendly({
+      bad_type: 'Not a JPG, PNG or WebP', too_large: 'Over 5 MB', too_many_pixels: 'Image too large',
+      bad_image: 'Could not read the image', rate_limited: 'Too many uploads, wait a bit', pin_failed: 'IPFS pinning failed',
+      origin_not_allowed: 'This site is not allowed to upload', not_configured: 'Upload service not configured',
+    }[body.error] || `Upload failed (${res.status})`);
+  }
+
+  async function publish() {
+    if (!draft.agreed || draft.stage === 'working') return;
+    if (!(await ensureReady({ needProfile: true }))) return;
+    if (!validateDraft()) { draft.stage = 'form'; return render(); }
+    draft.stage = 'working';
+    draft.progress = { started: true };
+    render();
+
+    // 1) Pin every photo that is not pinned yet. Nothing is listed unless all of them succeed.
+    for (const ph of draft.photos) {
+      if (ph.cid) continue;
+      ph.uploading = true; ph.error = null; render();
+      try { ph.cid = await uploadPhoto(ph); } catch (e) { ph.error = e.friendly ? e.message : 'Upload failed'; }
+      ph.uploading = false; render();
+    }
+    if (draft.photos.some((ph) => !ph.cid)) {
+      draft.stage = 'confirm';
+      draft.progress = { started: true, upload: 'failed' };
+      return render();
+    }
+
+    // 2) One transaction.
+    try {
+      const f = {
+        title: draft.title.trim(), kind: draft.kind, size: draft.size.trim(), condition: draft.condition,
+        photos: draft.photos.map((ph) => ph.cid), description: draft.description.trim(), currency: draft.currency, price: draftPrice(),
+      };
+      const { hash, id } = await store.list(f, (chain, txHash) => { draft.progress = { ...draft.progress, chain, hash: txHash || draft.progress.hash }; render(); });
+      draft.progress.chain = 'done';
+      state.hashes['list:' + id] = hash;
+      await refresh({ quiet: true });
+      go(id != null ? `#/item/${id}` : '#/me');
+      resetDraft();
+      toast('Listed. It lives on BOT Chain forever. ', txLink(hash));
+    } catch (e) {
+      console.error(e);
+      draft.stage = 'confirm';
+      draft.progress = { started: true, error: explain(e) };
+      render();
+    }
+  }
+
+  // ---------- photos: validate → crop to square → resize ----------
+  function addPhoto(file) {
+    draft.photoError = null;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { draft.photoError = 'Use a JPG, PNG or WebP photo.'; return render(); }
+    if (file.size > MAX_FILE) { draft.photoError = 'That photo is over 5 MB. Pick a smaller one.'; return render(); }
+    if (draft.photos.length >= LIMITS.photos) return;
+    cropModal(file);
+  }
+
+  async function loadBitmap(file) {
+    try { return await createImageBitmap(file, { imageOrientation: 'from-image' }); } catch { /* fall back */ }
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image();
+      img.src = url;
+      await img.decode();
+      return img;
+    } finally { URL.revokeObjectURL(url); }
+  }
+  function canvasBlob(canvas, type, quality) { return new Promise((r) => canvas.toBlob(r, type, quality)); }
+  async function encode(canvas) {
+    const webp = await canvasBlob(canvas, 'image/webp', 0.86);
+    if (webp && webp.type === 'image/webp') return webp;
+    return canvasBlob(canvas, 'image/jpeg', 0.88);
+  }
+  async function shrinkToDataUrl(blob, side) {
+    const bmp = await loadBitmap(blob);
+    const c = Object.assign(document.createElement('canvas'), { width: side, height: side });
+    c.getContext('2d').drawImage(bmp, 0, 0, side, side);
+    return c.toDataURL('image/jpeg', 0.8);
+  }
+
+  async function cropModal(file) {
+    let bmp;
+    try { bmp = await loadBitmap(file); } catch { draft.photoError = 'Could not read that image. Try another photo.'; return render(); }
+    const w = bmp.width, hgt = bmp.height;
+    const view = h('div', { class: 'crop', 'aria-label': 'Drag to position the photo' });
+    const shown = h('canvas', { width: w, height: hgt, style: 'position:absolute;left:0;top:0;transform-origin:0 0;pointer-events:none' });
+    shown.getContext('2d').drawImage(bmp, 0, 0);
+    view.append(shown);
+    let zoom = 1, ox = 0, oy = 0, size = 0;
+    const base = () => size / Math.min(w, hgt); // scale where the short side fills the square
+    function clamp() {
+      const s = base() * zoom;
+      ox = Math.min(0, Math.max(size - w * s, ox));
+      oy = Math.min(0, Math.max(size - hgt * s, oy));
+    }
+    function draw() { clamp(); shown.style.transform = `translate(${ox}px, ${oy}px) scale(${base() * zoom})`; }
+    function center() { const s = base() * zoom; ox = (size - w * s) / 2; oy = (size - hgt * s) / 2; draw(); }
+    let drag = null;
+    view.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, ox, oy }; view.setPointerCapture(e.pointerId); view.style.cursor = 'grabbing'; });
+    view.addEventListener('pointermove', (e) => { if (!drag) return; ox = drag.ox + e.clientX - drag.x; oy = drag.oy + e.clientY - drag.y; draw(); });
+    const end = () => { drag = null; view.style.cursor = ''; };
+    view.addEventListener('pointerup', end);
+    view.addEventListener('pointercancel', end);
+    const slider = h('input', { type: 'range', min: 1, max: 3, step: 0.01, value: 1, 'aria-label': 'Zoom',
+      oninput: (e) => {
+        const old = base() * zoom;
+        zoom = Number(e.target.value);
+        const now = base() * zoom;
+        const cx = size / 2, cy = size / 2;
+        ox = cx - (cx - ox) * (now / old); oy = cy - (cy - oy) * (now / old);
+        draw();
+      } });
+
+    const close = openModal(h('div', { class: 'modal wide', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Crop photo' },
+      h('button', { class: 'x-close', type: 'button', 'aria-label': 'Close', onclick: () => close() }, '×'),
+      h('h2', {}, 'Crop to square'),
+      h('p', { class: 'muted', style: 'margin:0' }, 'Drag to position. Zoom to frame the item.'),
+      view,
+      h('div', { class: 'zoom' }, '−', slider, '+'),
+      h('div', { class: 'actions' },
+        h('button', { class: 'btn', type: 'button', onclick: () => close() }, 'Cancel'),
+        h('button', { class: 'btn coral', type: 'button', onclick: async (e) => {
+          e.currentTarget.disabled = true;
+          const s = base() * zoom;
+          const sx = -ox / s, sy = -oy / s, side = size / s;
+          const out = Math.round(Math.min(OUT_SIDE, side));
+          const c = Object.assign(document.createElement('canvas'), { width: out, height: out });
+          const ctx = c.getContext('2d');
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(bmp, sx, sy, side, side, 0, 0, out, out);
+          const blob = await encode(c);
+          if (!blob || blob.size > MAX_FILE) { draft.photoError = 'Could not process that photo. Try another.'; close(); return render(); }
+          draft.photos.push({ blob, url: URL.createObjectURL(blob), cid: null, error: null });
+          close();
+          render();
+        } }, 'Use photo'))));
+    requestAnimationFrame(() => { size = view.clientWidth; center(); });
+  }
+
+  // ============================================================
+  // Modals
+  // ============================================================
+  function openModal(content, onDismiss) {
+    const back = h('div', { class: 'modal-back' }, content);
+    const prev = document.activeElement;
+    let closed = false;
+    const close = (dismissed = false) => {
+      if (closed) return;
+      closed = true;
+      back.remove();
+      document.removeEventListener('keydown', onKey);
+      if (dismissed) onDismiss?.();
+      prev?.focus?.();
+    };
+    const onKey = (e) => { if (e.key === 'Escape' && !back.dataset.busy) close(true); };
+    back.addEventListener('mousedown', (e) => { if (e.target === back && !back.dataset.busy) close(true); });
+    document.addEventListener('keydown', onKey);
+    $('modal-root').append(back);
+    (content.querySelector('input, button.btn') || content).focus?.();
+    close.el = back;
+    return close;
+  }
+
+  function installModal() {
+    const close = openModal(h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Install MetaMask' },
+      h('button', { class: 'x-close', type: 'button', 'aria-label': 'Close', onclick: () => close() }, '×'),
+      h('h2', {}, 'Install MetaMask'),
+      h('p', { class: 'muted' }, 'Resole uses MetaMask to sign in and pay on BOT Chain. Browsing works without it. On mobile, open this site inside the MetaMask app browser.'),
+      h('div', { class: 'actions' }, extLink('https://metamask.io/download/', 'Get MetaMask ↗', 'btn coral'))));
+  }
+
+  function profileModal({ editing = false } = {}) {
+    return new Promise((resolve) => {
+      const values = { name: state.me?.name || '', contact: state.me?.contact || '' };
+      const errBox = h('div', { class: 'status err', role: 'alert' });
+      const counter = (k, max) => h('span', {}, `${bytes(values[k])}/${max}`);
+      const nameCount = counter('name', LIMITS.name), contactCount = counter('contact', LIMITS.contact);
+      const save = h('button', { class: 'btn coral', type: 'submit' }, editing ? 'Save profile' : 'Create profile');
+      const form = h('form', { class: 'form', style: 'margin-top:16px', onsubmit: async (e) => {
+        e.preventDefault();
+        const name = values.name.trim(), contact = values.contact.trim();
+        if (!name) return errBox.replaceChildren('Add a display name.');
+        if (bytes(name) > LIMITS.name || bytes(contact) > LIMITS.contact) return errBox.replaceChildren('One of the fields is too long.');
+        if ([name, contact].some((v) => /\d[\d\s().-]{7,}\d/.test(v))) return errBox.replaceChildren('That looks like a phone number. Use a name and a public handle (Telegram, LINE, Instagram) instead.');
+        save.disabled = true; close.el.dataset.busy = '1';
+        errBox.className = 'status'; errBox.replaceChildren(PREVIEW ? 'Saving…' : 'Confirm in MetaMask…');
+        try {
+          await store.setProfile(name, contact);
+          state.me = { name, contact };
+          state.profiles.set(state.account.toLowerCase(), state.me);
+          close();
+          toast(editing ? 'Profile updated.' : `Welcome to Resole, ${name}.`);
+          render();
+          resolve(true);
+        } catch (err) {
+          console.error(err);
+          delete close.el.dataset.busy;
+          save.disabled = false;
+          errBox.className = 'status err';
+          errBox.replaceChildren(explain(err));
+        }
+      } },
+        h('label', { class: 'f' }, h('span', {}, 'Display name', nameCount),
+          h('input', { type: 'text', value: values.name, maxlength: LIMITS.name, required: true, autocomplete: 'nickname', placeholder: 'e.g. Mika Kicks', oninput: (e) => { values.name = e.target.value; nameCount.textContent = `${bytes(values.name)}/${LIMITS.name}`; } })),
+        h('label', { class: 'f' }, h('span', {}, 'Public contact (optional)', contactCount),
+          h('input', { type: 'text', value: values.contact, maxlength: LIMITS.contact, autocomplete: 'off', placeholder: 'e.g. TG @mikakicks or LINE mika.k', oninput: (e) => { values.contact = e.target.value; contactCount.textContent = `${bytes(values.contact)}/${LIMITS.contact}`; } })),
+        h('div', { class: 'notice', style: 'margin:0' }, h('b', {}, 'Public forever. '), 'Buyers and sellers use this to arrange delivery. Never add a home address or phone number.'),
+        errBox,
+        h('div', { class: 'actions', style: 'margin-top:0' }, h('button', { class: 'btn', type: 'button', onclick: () => { close(); resolve(false); } }, 'Cancel'), save));
+      const close = openModal(h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Profile' },
+        h('button', { class: 'x-close', type: 'button', 'aria-label': 'Close', onclick: () => { close(); resolve(false); } }, '×'),
+        h('h2', {}, editing ? 'Edit your profile' : 'Create your profile'),
+        h('p', { class: 'muted', style: 'margin:0' }, editing ? 'Your old listings keep working with the new name.' : `One quick transaction on ${NET.name}. You only do this once.`),
+        form), () => resolve(false));
+    });
+  }
+
+  function modeModal() {
+    const pick = (mode) => { close(); setMode(mode, { quiet: true }); if (mode === 'selling') startSell(); else go('#/'); };
+    const close = openModal(h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Choose a mode' },
+      h('button', { class: 'x-close', type: 'button', 'aria-label': 'Close', onclick: () => close() }, '×'),
+      h('h2', {}, 'How are you using Resole today?'),
+      h('p', { class: 'muted', style: 'margin:0' }, 'Switch anytime from the header. Same wallet, both roles, no transaction.'),
+      h('div', { class: 'modes' },
+        h('button', { class: 'mode-card', type: 'button', onclick: () => pick('selling') }, h('span', { class: 'ico', 'aria-hidden': 'true' }, '🏷️'), h('div', {}, h('b', {}, "I'M SELLING"), h('br'), h('span', {}, 'List shoes and apparel at your price.'))),
+        h('button', { class: 'mode-card', type: 'button', onclick: () => pick('buying') }, h('span', { class: 'ico', 'aria-hidden': 'true' }, '👟'), h('div', {}, h('b', {}, "I'M BUYING"), h('br'), h('span', {}, 'Pay in BOT or USDT, straight to the seller.'))))));
+  }
+
+  // ============================================================
+  // Render
+  // ============================================================
+  function render() {
+    renderHeader();
+    const r = route();
+    let view;
+    if (r.name === 'item') view = itemView(r.id);
+    else if (r.name === 'bought') view = boughtView(r.id);
+    else if (r.name === 'sell') view = sellView();
+    else if (r.name === 'me') view = meView(r.tab);
+    else view = homeView();
+    $('app').replaceChildren(...[view].flat().filter(Boolean));
+  }
+
+  function boot() {
+    const line = ['<b>Every sale settled on BOT Chain.</b>', '<i>●</i>', '<b>Every sale final.</b>', '<i>●</i>', 'Peer-to-peer', '<i>●</i>', 'Zero platform fee', '<i>●</i>', 'Pay in BOT or USDT', '<i>●</i>'];
+    $('announce').innerHTML = [...line, ...line, ...line, ...line].map((s) => `<span>${s}</span>`).join('');
+    if (netKey === 'testnet') $('net-badge').hidden = false;
+    if (PREVIEW) {
+      const bar = $('preview-bar');
+      bar.hidden = false;
+      bar.textContent = `Preview mode · no contract set for ${NET.name} yet, so sales are simulated in this browser · add ?reset to start over`;
+    }
+    renderFooter();
+    render();
+    lastRoute = location.hash;
+  }
+
+  if (!window.ethers) {
+    document.getElementById('app').textContent = 'Could not load ethers.js. Check your connection and reload.';
+    return;
+  }
+  boot();
+  store.init()
+    .then(() => Promise.all([initWallet(), refresh()]))
+    .catch((e) => { console.error(e); state.loadError = `Could not reach ${NET.name}. Check your connection and try again.`; render(); });
+})();
+</script>
+</body>
+</html>
