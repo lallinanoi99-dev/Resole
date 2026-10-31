@@ -264,15 +264,15 @@
 
   /* ---------- footer ---------- */
   footer.foot { margin-top: 96px; }
-  .chain-drop { display: grid; grid-template-columns: 1fr minmax(0, 260px) 1fr; align-items: center; gap: 4px; background: #fff; }
+  .chain-drop { display: grid; grid-template-columns: 1fr minmax(0, 160px) 1fr; align-items: center; gap: 4px; background: #fff; }
   .chain-drop .side { display: grid; place-items: center; font: 700 18px/1.2 var(--sans); text-transform: uppercase; text-align: center; padding: 20px; }
   .chain-card { display: block; }
   .chain-card .stage { position: relative; aspect-ratio: 1; display: grid; place-items: center; background: var(--tile); overflow: hidden; }
   .chain-card .stage::after { content: ''; position: absolute; width: 46%; height: 7%; bottom: 17%; left: 50%; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(closest-side, rgba(0,0,0,.28), transparent); transition: transform .35s, opacity .35s; }
-  .chain-card img { position: relative; z-index: 1; width: 40%; height: auto; border-radius: 22%; transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s; box-shadow: 0 18px 30px rgba(0,0,0,.18); }
+  .chain-card img { position: relative; z-index: 1; width: 36%; height: auto; border-radius: 22%; transition: transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s; box-shadow: 0 18px 30px rgba(0,0,0,.18); }
   .chain-card:hover img { transform: translateY(-14px) rotate(-3deg); box-shadow: 0 30px 50px rgba(0,0,0,.22), 0 0 60px rgba(240,110,191,.55); }
   .chain-card:hover .stage::after { transform: translateX(-50%) scale(.8); opacity: .6; }
-  .chain-card .body { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; row-gap: 2px; padding: 10px 2px 0; font-size: 14px; }
+  .chain-card .body { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; row-gap: 2px; padding: 8px 2px 0; font-size: 12px; }
   .chain-card .body > span[title] { grid-column: 1 / -1; color: var(--muted); }
   .chain-card .body b { font-weight: 800; }
   .chain-card .body .cap { font-style: italic; }
@@ -319,7 +319,7 @@
     .mode-card { min-height: 130px; }
     .facts b { font-size: 13px; }
     .chain-drop { grid-template-columns: 1fr; justify-items: center; }
-    .chain-drop > div { width: min(220px, 100%); }
+    .chain-drop > div { width: min(150px, 100%); }
     .chain-drop .side { display: none; }
     .foot-cols { grid-template-columns: 1fr 1fr; gap: 28px 16px; margin-top: 56px; }
     .foot-cols > :first-child { grid-column: 1 / -1; }
