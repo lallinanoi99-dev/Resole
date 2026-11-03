@@ -8,7 +8,7 @@ Sell your second-hand shoes and apparel. Sellers upload photos and set their own
 
 | | |
 |---|---|
-| Live site | _not published yet_ |
+| Live site | https://lallinanoi99-dev.github.io/Resole/ |
 | Source | https://github.com/lallinanoi99-dev/Resole |
 | Upload Worker | _not deployed yet_ |
 | Contract (BOT Chain mainnet, chain ID 677) | [`0xe0672E65859cbf537EF1f7d2498047BAeC09Ba9c`](https://scan.botchain.ai/address/0xe0672E65859cbf537EF1f7d2498047BAeC09Ba9c) (deployed in block 28957142) |
