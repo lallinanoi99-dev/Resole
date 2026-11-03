@@ -451,6 +451,7 @@
     items: [], profiles: new Map(), loaded: false, loading: false, loadError: null,
     kind: 'all', status: 'all', dropsOpen: true,
     buy: null, // { id, step, error, hash }
+    gasPrice: 20000000000n, // BOT Chain's usual 20 gwei; replaced by the live value from the RPC
     hashes: {}, // 'list:<id>' / 'sold:<id>' → tx hash from this session
     tab: 'listings', sub: 'available',
   };
@@ -484,6 +485,10 @@
     const frac = f.replace(/0+$/, '').slice(0, 6);
     return Number(i).toLocaleString('en-US') + (frac ? '.' + frac : '');
   }
+  // A purchase uses about 96k gas; round up so the shown fee is never an underestimate.
+  const BUY_GAS = 100000n;
+  const buyFee = () => state.gasPrice * BUY_GAS;
+  const feeLabel = () => `about ${fmtAmount(buyFee())} BOT`;
   const priceLabel = (item) => `${fmtAmount(item.price)} BOT`;
   const priceEl = (item, cls = 'price') => h('span', { class: cls }, fmtAmount(item.price), h('span', { class: 'cur bot' }, 'BOT'));
   const caption = (item) => `[SIZE ${item.size} · ${CONDITIONS[item.condition] || '—'}]`.toUpperCase();
@@ -564,6 +569,7 @@
     async init() {
       rpc = new ethers.JsonRpcProvider(NET.rpc, NET.chainId, { staticNetwork: true });
       reader = new ethers.Contract(NET.contract, ABI, rpc);
+      try { state.gasPrice = (await rpc.getFeeData()).gasPrice ?? state.gasPrice; } catch { /* keep the default */ }
     },
     async items() {
       const total = Number(await reader.total());
@@ -627,24 +633,24 @@
     { address: '0x5E11000000000000000000000000000000000C03', name: 'Second Lap', contact: '' },
   ];
   const DEMO_ITEMS = [
-    // [seller, title, kind, size, condition, photo, price in BOT, hoursAgo, soldTo]
-    [0, 'White Leather Sneakers', 0, '42', 1, '19-white-leather-sneakers', '120', 3],
-    [1, 'Windbreaker Jacket', 1, 'L', 1, '07-black-white-windbreaker-jacket', '160', 5],
-    [2, 'Silver Running Shoes', 0, '44', 1, '27-silver-grey-running-shoes', '150', 9],
-    [0, 'Cream Chunky Sneakers', 0, '39', 2, '20-cream-chunky-sneakers', '100', 14],
-    [1, 'Camel Wrap Coat', 1, 'M', 2, '06-camel-wrap-coat', '300', 20, 2],
-    [2, 'Black Chelsea Boots', 0, '41', 3, '21-black-chelsea-boots', '80', 30, 1],
-    [1, 'Oatmeal Knit Jumper', 1, 'S', 3, '05-oatmeal-knit-jumper', '48', 34],
-    [0, 'Red Rain Boots', 0, '38', 0, '22-red-rain-boots', '72', 40],
-    [2, 'Straight-Leg Jeans', 1, 'W30', 2, '12-dark-indigo-straight-leg-jeans', '88', 52],
-    [1, 'Chestnut Penny Loafers', 0, '43', 2, '25-chestnut-penny-loafers', '140', 60],
-    [0, 'Graphic Tee', 1, 'M', 0, '04-white-red-graphic-tee', '60', 75],
-    [2, 'Tan Leather Sandals', 0, '40', 1, '26-tan-leather-sandals', '60', 90, 0],
-    [1, 'Pointed Slingbacks', 0, '38', 2, '24-black-pointed-slingbacks', '90', 110],
-    [2, 'Lavender Cargo Joggers', 1, 'M', 1, '13-lavender-cargo-joggers', '72', 130],
+    // [seller, title, kind, size, condition, photo, price in BOT, hoursAgo, soldTo]. Tiny prices so test buys stay cheap.
+    [0, 'White Leather Sneakers', 0, '42', 1, '19-white-leather-sneakers', '0.00012', 3],
+    [1, 'Windbreaker Jacket', 1, 'L', 1, '07-black-white-windbreaker-jacket', '0.00016', 5],
+    [2, 'Silver Running Shoes', 0, '44', 1, '27-silver-grey-running-shoes', '0.00015', 9],
+    [0, 'Cream Chunky Sneakers', 0, '39', 2, '20-cream-chunky-sneakers', '0.0001', 14],
+    [1, 'Camel Wrap Coat', 1, 'M', 2, '06-camel-wrap-coat', '0.00028', 20, 2],
+    [2, 'Black Chelsea Boots', 0, '41', 3, '21-black-chelsea-boots', '0.00008', 30, 1],
+    [1, 'Oatmeal Knit Jumper', 1, 'S', 3, '05-oatmeal-knit-jumper', '0.00005', 34],
+    [0, 'Red Rain Boots', 0, '38', 0, '22-red-rain-boots', '0.00007', 40],
+    [2, 'Straight-Leg Jeans', 1, 'W30', 2, '12-dark-indigo-straight-leg-jeans', '0.00009', 52],
+    [1, 'Chestnut Penny Loafers', 0, '43', 2, '25-chestnut-penny-loafers', '0.00014', 60],
+    [0, 'Graphic Tee', 1, 'M', 0, '04-white-red-graphic-tee', '0.00006', 75],
+    [2, 'Tan Leather Sandals', 0, '40', 1, '26-tan-leather-sandals', '0.00006', 90, 0],
+    [1, 'Pointed Slingbacks', 0, '38', 2, '24-black-pointed-slingbacks', '0.00009', 110],
+    [2, 'Lavender Cargo Joggers', 1, 'M', 1, '13-lavender-cargo-joggers', '0.00007', 130],
   ];
   const previewStore = {
-    key: `resole.preview.${NET.chainId}.v2`,
+    key: `resole.preview.${NET.chainId}.v3`,
     seed() {
       const now = Math.floor(Date.now() / 1000);
       const profiles = Object.fromEntries(DEMO_SELLERS.map((s) => [s.address.toLowerCase(), { name: s.name, contact: s.contact }]));
@@ -664,7 +670,7 @@
     write(d) {
       if (!storage(this.key, JSON.stringify(d))) throw friendly("This browser's preview storage is full. Open the site with ?reset to start over.");
     },
-    async init() {},
+    async init() {}, // keeps the default 20 gwei gas price
     async items() { return this.read().items.map((r, i) => normItem(r, i)); },
     async item(id) { const r = this.read().items[id]; return r ? normItem(r, id) : null; },
     async profile(addr) { return this.read().profiles[addr.toLowerCase()] || null; },
@@ -1173,7 +1179,7 @@
         : h('button', { class: 'btn coral big block', type: 'button', disabled: busy, onclick: () => buyItem(item.id) }, label),
       b.error && h('div', { class: 'status err', role: 'alert' }, b.error),
       b.hash && busy && h('div', { class: 'status' }, txLink(b.hash, 'Pending tx ↗')),
-      !b.error && !busy && h('div', { class: 'status' }, 'One MetaMask transaction for the exact amount, plus a little BOT for gas.'));
+      !b.error && !busy && h('div', { class: 'status' }, `One MetaMask transaction: ${priceLabel(item)} to the seller, plus ${feeLabel()} network fee to BOT Chain.`));
   }
 
   const saleTxCache = new Map();
@@ -1212,7 +1218,7 @@
       }
       if (isMine(item)) return setBuy({ step: 'idle' });
       const bal = await store.balances(state.account);
-      if (bal.bot <= item.price) return setBuy({ step: 'error', error: `You need ${priceLabel(item)} + a little BOT for gas.` });
+      if (bal.bot < item.price + buyFee()) return setBuy({ step: 'error', error: `You need ${priceLabel(item)} + ${feeLabel()} for the network fee.` });
 
       const hash = await store.buy(item, (step, txHash) => setBuy({ step, hash: txHash || null }));
       state.hashes['sold:' + id] = hash;
@@ -1403,7 +1409,7 @@
           field('description', 'Description (optional)', LIMITS.description, { multiline: true, placeholder: 'Fit, flaws, how often worn, what is included…' }),
           h('div', { class: 'f' }, h('span', { class: 'lbl' }, 'Your price'),
             h('div', { class: 'price-row' },
-              h('input', { type: 'text', inputmode: 'decimal', value: draft.price, placeholder: '0', 'aria-label': 'Price', autocomplete: 'off', oninput: (e) => { draft.price = e.target.value.replace(',', '.'); updatePreview(); } }),
+              h('input', { type: 'text', inputmode: 'decimal', value: draft.price, placeholder: 'e.g. 0.0002', 'aria-label': 'Price in BOT', autocomplete: 'off', oninput: (e) => { draft.price = e.target.value.replace(',', '.'); updatePreview(); } }),
               h('div', { class: 'opts' }, h('span', { class: 'chip-btn', 'aria-pressed': 'true', style: 'display:inline-flex;align-items:center' }, 'BOT'))),
             err('price')),
           h('button', { class: 'btn coral big block', type: 'submit' }, 'Review listing')),
