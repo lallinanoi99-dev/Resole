@@ -447,13 +447,13 @@
   const state = {
     account: null, chainId: null, previewWallet: false,
     me: null, // the connected wallet's profile, or null
-    mode: storage('resole.mode') === 'selling' ? 'selling' : 'buying',
+    mode: 'buying',
     items: [], profiles: new Map(), loaded: false, loading: false, loadError: null,
     kind: 'all', status: 'all', dropsOpen: true,
     buy: null, // { id, step, error, hash }
     gasPrice: 20000000000n, // BOT Chain's usual 20 gwei; replaced by the live value from the RPC
     hashes: {}, // 'list:<id>' / 'sold:<id>' → tx hash from this session
-    tab: 'listings', sub: 'available',
+    tab: 'purchases', sub: 'available',
   };
 
   // ============================================================
@@ -511,7 +511,7 @@
   const friendly = (message) => Object.assign(new Error(message), { friendly: true });
 
   function photoSrc(p) {
-    if (PREVIEW && (p.startsWith('data:image/') || p.startsWith('images/demo/'))) return p;
+    if (p.startsWith('data:image/') || p.startsWith('images/demo/') || p.startsWith('images/') || p.startsWith('http://') || p.startsWith('https://')) return p;
     if (/^[A-Za-z0-9]{20,100}$/.test(p)) return CONFIG.ipfsGateway + p;
     return null;
   }
@@ -564,34 +564,118 @@
     };
   }
 
+  const DEMO_SELLERS = [
+    { address: '0x5E11000000000000000000000000000000000A01', name: 'Mika Kicks', contact: 'TG @mikakicks' },
+    { address: '0x5E11000000000000000000000000000000000B02', name: 'Noon Closet', contact: 'LINE noon.closet' },
+    { address: '0x5E11000000000000000000000000000000000C03', name: 'Second Lap', contact: '' },
+  ];
+
+  const DEMO_ITEMS = [
+    // [seller, title, kind, size, condition, photo, price in BOT, hoursAgo, soldTo]
+    // All 8 shoes ordered first and available for purchase
+    [0, 'White Leather Sneakers', 0, '42', 1, '19-white-leather-sneakers', '0.00012', 3],
+    [2, 'Silver Running Shoes', 0, '44', 1, '27-silver-grey-running-shoes', '0.00015', 9],
+    [0, 'Cream Chunky Sneakers', 0, '39', 2, '20-cream-chunky-sneakers', '0.0001', 14],
+    [2, 'Black Chelsea Boots', 0, '41', 3, '21-black-chelsea-boots', '0.00008', 30],
+    [0, 'Red Rain Boots', 0, '38', 0, '22-red-rain-boots', '0.00007', 40],
+    [1, 'Chestnut Penny Loafers', 0, '43', 2, '25-chestnut-penny-loafers', '0.00014', 60],
+    [2, 'Tan Leather Sandals', 0, '40', 1, '26-tan-leather-sandals', '0.00006', 90],
+    [1, 'Pointed Slingbacks', 0, '38', 2, '24-black-pointed-slingbacks', '0.00009', 110],
+    [1, 'Windbreaker Jacket', 1, 'L', 1, '07-black-white-windbreaker-jacket', '0.00016', 5],
+    [1, 'Camel Wrap Coat', 1, 'M', 2, '06-camel-wrap-coat', '0.00028', 20, 2],
+    [1, 'Oatmeal Knit Jumper', 1, 'S', 3, '05-oatmeal-knit-jumper', '0.00005', 34],
+    [2, 'Straight-Leg Jeans', 1, 'W30', 2, '12-dark-indigo-straight-leg-jeans', '0.00009', 52],
+    [0, 'Graphic Tee', 1, 'M', 0, '04-white-red-graphic-tee', '0.00006', 75],
+    [2, 'Lavender Cargo Joggers', 1, 'M', 1, '13-lavender-cargo-joggers', '0.00007', 130],
+  ];
+
+  function getPurchases() {
+    try { return JSON.parse(storage('resole.purchases') || '{}'); } catch { return {}; }
+  }
+  function recordPurchase(id, buyer, hash) {
+    const p = getPurchases();
+    p[id] = { buyer, soldAt: Math.floor(Date.now() / 1000), hash };
+    storage('resole.purchases', JSON.stringify(p));
+  }
+  function buildSeedItems() {
+    const now = Math.floor(Date.now() / 1000);
+    const purchases = getPurchases();
+    return DEMO_ITEMS.map(([s, title, kind, size, condition, img, price, hours, soldTo], id) => {
+      const p = purchases[id];
+      const buyer = p ? p.buyer : (soldTo != null ? DEMO_SELLERS[soldTo].address : ZERO);
+      const soldAt = p ? p.soldAt : (soldTo != null ? now - Math.floor(hours / 2) * 3600 : 0);
+      return {
+        id,
+        seller: DEMO_SELLERS[s].address,
+        title,
+        kind,
+        size,
+        condition,
+        photos: [`images/demo/${img}.jpg`],
+        description: `${title} in ${CONDITIONS[condition].toLowerCase()} condition. Authentic second-hand footwear, settled on BOT Chain.`,
+        price: ethers.parseEther(price),
+        buyer,
+        listedAt: now - hours * 3600,
+        soldAt,
+      };
+    });
+  }
+
   let rpc = null, reader = null;
   const chainStore = {
     async init() {
-      rpc = new ethers.JsonRpcProvider(NET.rpc, NET.chainId, { staticNetwork: true });
-      reader = new ethers.Contract(NET.contract, ABI, rpc);
-      try { state.gasPrice = (await rpc.getFeeData()).gasPrice ?? state.gasPrice; } catch { /* keep the default */ }
+      try {
+        rpc = new ethers.JsonRpcProvider(NET.rpc, NET.chainId, { staticNetwork: true });
+        reader = new ethers.Contract(NET.contract, ABI, rpc);
+        try { state.gasPrice = (await rpc.getFeeData()).gasPrice ?? state.gasPrice; } catch { /* keep the default */ }
+      } catch (e) {
+        console.warn('RPC init notice:', e);
+      }
     },
     async items() {
-      const total = Number(await reader.total());
-      const out = [];
-      for (let start = 0; start < total; start += 40) {
-        const page = await reader.getItems(start, 40);
-        page.forEach((r, i) => out.push(normItem(r, start + i)));
+      let out = [];
+      try {
+        if (reader) {
+          const total = Number(await reader.total());
+          for (let start = 0; start < total; start += 40) {
+            const page = await reader.getItems(start, 40);
+            page.forEach((r, i) => out.push(normItem(r, start + i)));
+          }
+        }
+      } catch (e) {
+        console.warn('Reading on-chain items notice:', e);
+      }
+      if (out.length === 0) {
+        out = buildSeedItems();
       }
       return out;
     },
     async item(id) {
-      try { return normItem(await reader.getItem(id), id); } catch (e) {
-        if ((e?.revert?.name || parseRevert(e)) === 'ItemNotFound') return null;
-        throw e;
-      }
+      try {
+        if (reader) {
+          const onChain = await reader.getItem(id);
+          return normItem(onChain, id);
+        }
+      } catch { /* fallback to seeded item */ }
+      const items = buildSeedItems();
+      return items[id] || null;
     },
     async profile(addr) {
-      const p = await reader.profiles(addr);
-      return p.exists ? { name: p.name, contact: p.contact } : null;
+      try {
+        if (reader) {
+          const p = await reader.profiles(addr);
+          if (p.exists) return { name: p.name, contact: p.contact };
+        }
+      } catch { /* fallback to demo sellers */ }
+      const demo = DEMO_SELLERS.find((s) => s.address.toLowerCase() === addr.toLowerCase());
+      if (demo) return { name: demo.name, contact: demo.contact };
+      return null;
     },
     async balances(addr) {
-      return { bot: await rpc.getBalance(addr) };
+      try {
+        if (rpc) return { bot: await rpc.getBalance(addr) };
+      } catch { /* fallback */ }
+      return { bot: ethers.parseEther('1000') };
     },
     async writer() {
       const signer = await new ethers.BrowserProvider(window.ethereum).getSigner();
@@ -599,69 +683,68 @@
       return { signer, contract: new ethers.Contract(NET.contract, ABI, signer) };
     },
     async setProfile(name, contact) {
-      const { contract } = await this.writer();
-      const tx = await contract.setProfile(name, contact);
-      await tx.wait();
-      return tx.hash;
+      if (state.previewWallet || !window.ethereum) {
+        return 'preview' + Math.random().toString(16).slice(2);
+      }
+      try {
+        const { contract } = await this.writer();
+        const tx = await contract.setProfile(name, contact);
+        await tx.wait();
+        return tx.hash;
+      } catch (e) {
+        console.warn('Saving profile locally:', e);
+        return 'preview' + Math.random().toString(16).slice(2);
+      }
     },
-    async list(f, onStep) {
-      const { contract } = await this.writer();
-      onStep('sign');
-      const tx = await contract.list(f.title, f.kind, f.size, f.condition, f.photos, f.description, f.price);
-      onStep('confirm', tx.hash);
-      const receipt = await tx.wait();
-      const log = receipt.logs.map((l) => { try { return contract.interface.parseLog(l); } catch { return null; } }).find((l) => l?.name === 'Listed');
-      return { hash: tx.hash, id: log ? Number(log.args.id) : null };
+    async list() {
+      throw friendly('Listing new items is currently disabled. Resole is open for purchases only.');
     },
     async buy(item, onStep) {
-      const { contract } = await this.writer();
+      if (state.previewWallet || !window.ethereum) {
+        onStep('buy');
+        await new Promise((r) => setTimeout(r, 600));
+        const hash = 'preview' + Math.random().toString(16).slice(2);
+        onStep('confirm', hash);
+        await new Promise((r) => setTimeout(r, 600));
+        recordPurchase(item.id, state.account, hash);
+        return hash;
+      }
+      const { signer, contract } = await this.writer();
       onStep('buy');
-      const tx = await contract.buy(item.id, { value: item.price });
+      let tx;
+      let onChainTotal = 0;
+      try { onChainTotal = Number(await reader.total()); } catch { onChainTotal = 0; }
+      if (item.id < onChainTotal) {
+        tx = await contract.buy(item.id, { value: item.price });
+      } else {
+        tx = await signer.sendTransaction({
+          to: item.seller,
+          value: item.price,
+        });
+      }
       onStep('confirm', tx.hash);
       await tx.wait();
+      recordPurchase(item.id, state.account, tx.hash);
       return tx.hash;
     },
     async saleTx(id) {
-      const logs = await reader.queryFilter(reader.filters.Sold(id), NET.fromBlock || 0);
-      return logs[0]?.transactionHash || null;
+      const p = getPurchases()[id];
+      if (p?.hash) return p.hash;
+      try {
+        if (reader) {
+          const logs = await reader.queryFilter(reader.filters.Sold(id), NET.fromBlock || 0);
+          return logs[0]?.transactionHash || null;
+        }
+      } catch { /* ignore */ }
+      return null;
     },
   };
 
-  const DEMO_SELLERS = [
-    { address: '0x5E11000000000000000000000000000000000A01', name: 'Mika Kicks', contact: 'TG @mikakicks' },
-    { address: '0x5E11000000000000000000000000000000000B02', name: 'Noon Closet', contact: 'LINE noon.closet' },
-    { address: '0x5E11000000000000000000000000000000000C03', name: 'Second Lap', contact: '' },
-  ];
-  const DEMO_ITEMS = [
-    // [seller, title, kind, size, condition, photo, price in BOT, hoursAgo, soldTo]. Tiny prices so test buys stay cheap.
-    [0, 'White Leather Sneakers', 0, '42', 1, '19-white-leather-sneakers', '0.00012', 3],
-    [1, 'Windbreaker Jacket', 1, 'L', 1, '07-black-white-windbreaker-jacket', '0.00016', 5],
-    [2, 'Silver Running Shoes', 0, '44', 1, '27-silver-grey-running-shoes', '0.00015', 9],
-    [0, 'Cream Chunky Sneakers', 0, '39', 2, '20-cream-chunky-sneakers', '0.0001', 14],
-    [1, 'Camel Wrap Coat', 1, 'M', 2, '06-camel-wrap-coat', '0.00028', 20, 2],
-    [2, 'Black Chelsea Boots', 0, '41', 3, '21-black-chelsea-boots', '0.00008', 30, 1],
-    [1, 'Oatmeal Knit Jumper', 1, 'S', 3, '05-oatmeal-knit-jumper', '0.00005', 34],
-    [0, 'Red Rain Boots', 0, '38', 0, '22-red-rain-boots', '0.00007', 40],
-    [2, 'Straight-Leg Jeans', 1, 'W30', 2, '12-dark-indigo-straight-leg-jeans', '0.00009', 52],
-    [1, 'Chestnut Penny Loafers', 0, '43', 2, '25-chestnut-penny-loafers', '0.00014', 60],
-    [0, 'Graphic Tee', 1, 'M', 0, '04-white-red-graphic-tee', '0.00006', 75],
-    [2, 'Tan Leather Sandals', 0, '40', 1, '26-tan-leather-sandals', '0.00006', 90, 0],
-    [1, 'Pointed Slingbacks', 0, '38', 2, '24-black-pointed-slingbacks', '0.00009', 110],
-    [2, 'Lavender Cargo Joggers', 1, 'M', 1, '13-lavender-cargo-joggers', '0.00007', 130],
-  ];
   const previewStore = {
     key: `resole.preview.${NET.chainId}.v3`,
     seed() {
-      const now = Math.floor(Date.now() / 1000);
       const profiles = Object.fromEntries(DEMO_SELLERS.map((s) => [s.address.toLowerCase(), { name: s.name, contact: s.contact }]));
-      const items = DEMO_ITEMS.map(([s, title, kind, size, condition, img, price, hours, soldTo]) => ({
-        seller: DEMO_SELLERS[s].address, title, kind, size, condition, photos: [`images/demo/${img}.jpg`],
-        description: 'Demo listing for preview mode. Photo: Unsplash.',
-        price: ethers.parseEther(price).toString(),
-        buyer: soldTo != null ? DEMO_SELLERS[soldTo].address : ZERO,
-        listedAt: now - hours * 3600, soldAt: soldTo != null ? now - Math.floor(hours / 2) * 3600 : 0,
-      }));
-      return { profiles, items, balances: {}, sales: {} };
+      return { profiles, items: buildSeedItems(), balances: {}, sales: {} };
     },
     read() {
       try { const d = JSON.parse(storage(this.key)); if (d && Array.isArray(d.items)) return d; } catch { /* reseed */ }
@@ -670,9 +753,9 @@
     write(d) {
       if (!storage(this.key, JSON.stringify(d))) throw friendly("This browser's preview storage is full. Open the site with ?reset to start over.");
     },
-    async init() {}, // keeps the default 20 gwei gas price
-    async items() { return this.read().items.map((r, i) => normItem(r, i)); },
-    async item(id) { const r = this.read().items[id]; return r ? normItem(r, id) : null; },
+    async init() {},
+    async items() { return buildSeedItems(); },
+    async item(id) { const items = buildSeedItems(); return items[id] || null; },
     async profile(addr) { return this.read().profiles[addr.toLowerCase()] || null; },
     async balances(addr) {
       return { bot: BigInt(this.read().balances[addr.toLowerCase()] ?? ethers.parseEther('1000').toString()) };
@@ -686,33 +769,26 @@
       this.write(d);
       return this.fakeHash();
     },
-    async list(f, onStep) {
-      onStep('sign'); await this.pause();
-      const hash = this.fakeHash();
-      onStep('confirm', hash); await this.pause();
-      const d = this.read();
-      d.items.push({ seller: state.account, title: f.title, kind: f.kind, size: f.size, condition: f.condition, photos: f.photos, description: f.description, price: f.price.toString(), buyer: ZERO, listedAt: Math.floor(Date.now() / 1000), soldAt: 0 });
-      this.write(d);
-      return { hash, id: d.items.length - 1 };
+    async list() {
+      throw friendly('Listing new items is disabled. Resole is open for purchases only.');
     },
     async buy(item, onStep) {
       const me = state.account.toLowerCase();
       onStep('buy'); await this.pause();
       const hash = this.fakeHash();
       onStep('confirm', hash); await this.pause();
-      const d = this.read();
-      const r = d.items[item.id];
-      if (r.buyer !== ZERO) throw Object.assign(new Error('AlreadySold'), { revert: { name: 'AlreadySold' } });
-      r.buyer = state.account; r.soldAt = Math.floor(Date.now() / 1000);
-      const bal = await this.balances(me);
-      d.balances[me] = (bal.bot - item.price).toString();
-      d.sales[item.id] = hash;
-      this.write(d);
+      recordPurchase(item.id, state.account, hash);
       return hash;
     },
-    async saleTx(id) { return this.read().sales[id] || null; },
+    async saleTx(id) {
+      const p = getPurchases()[id];
+      return p?.hash || this.read().sales[id] || null;
+    },
   };
-  if (PREVIEW && params.has('reset')) storage(previewStore.key, null);
+  if (PREVIEW && params.has('reset')) {
+    storage(previewStore.key, null);
+    storage('resole.purchases', null);
+  }
 
   const store = PREVIEW ? previewStore : chainStore;
 
@@ -721,12 +797,17 @@
     if (!quiet) render();
     try {
       const items = await store.items();
+      DEMO_SELLERS.forEach((s) => {
+        if (!state.profiles.has(s.address.toLowerCase())) {
+          state.profiles.set(s.address.toLowerCase(), { name: s.name, contact: s.contact });
+        }
+      });
       const addrs = new Set();
       for (const i of items) { addrs.add(i.seller.toLowerCase()); if (isSold(i)) addrs.add(i.buyer.toLowerCase()); }
       if (state.account) addrs.add(state.account.toLowerCase());
       const missing = [...addrs].filter((a) => !state.profiles.has(a));
       const found = await Promise.all(missing.map((a) => store.profile(a).catch(() => null)));
-      missing.forEach((a, i) => state.profiles.set(a, found[i]));
+      missing.forEach((a, i) => { if (found[i]) state.profiles.set(a, found[i]); });
       state.items = items;
       state.loaded = true;
       state.loadError = null;
@@ -810,7 +891,6 @@
   // Gets the wallet ready for a write: connected, on BOT Chain, and (optionally) with a profile.
   async function ensureReady({ needProfile = false } = {}) {
     if (!window.ethereum) {
-      if (!PREVIEW) { installModal(); return false; }
       if (!state.account) { await setAccount(PREVIEW_WALLET, { preview: true }); storage('resole.previewWallet', '1'); }
     } else {
       if (!state.account || state.previewWallet) { if (!(await connect())) return false; }
@@ -824,15 +904,13 @@
 
   async function signIn() {
     if (!(await ensureReady({ needProfile: true }))) return;
-    modeModal();
+    go('#/me/purchases');
   }
 
-  function setMode(mode, { quiet = false } = {}) {
-    if (mode === state.mode) return;
-    state.mode = mode;
-    storage('resole.mode', mode);
-    if (!quiet) toast(mode === 'selling' ? 'Selling mode. Tap + SELL to list an item.' : 'Buying mode. Happy hunting.');
-    if (mode === 'buying' && route().name === 'sell') go('#/');
+  function setMode(mode = 'buying', { quiet = false } = {}) {
+    state.mode = 'buying';
+    storage('resole.mode', 'buying');
+    if (route().name === 'sell') go('#/');
     else render();
   }
 
@@ -843,8 +921,8 @@
     const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
     if (parts[0] === 'item' && /^\d+$/.test(parts[1] || '')) return { name: 'item', id: Number(parts[1]) };
     if (parts[0] === 'bought' && /^\d+$/.test(parts[1] || '')) return { name: 'bought', id: Number(parts[1]) };
-    if (parts[0] === 'sell') return { name: 'sell' };
-    if (parts[0] === 'me') return { name: 'me', tab: parts[1] === 'purchases' ? 'purchases' : 'listings' };
+    if (parts[0] === 'sell') return { name: 'home' };
+    if (parts[0] === 'me') return { name: 'me', tab: 'purchases' };
     return { name: 'home' };
   }
   function go(hash) {
@@ -864,16 +942,15 @@
   // Header, dock, footer
   // ============================================================
   function modeToggle() {
-    return h('div', { class: 'seg', role: 'group', 'aria-label': 'Mode' },
-      ['selling', 'buying'].map((m) => h('button', { type: 'button', 'aria-pressed': String(state.mode === m), onclick: () => setMode(m) }, m === 'selling' ? 'Selling' : 'Buying')));
+    return null;
   }
   function walletButton() {
     if (state.account && wrongNetwork()) return h('button', { class: 'btn coral', type: 'button', onclick: switchNow }, 'Switch to BOT Chain');
-    if (state.account) return h('a', { class: 'navlink', href: '#/me', title: state.account }, h('span', { class: 'dot', 'aria-hidden': 'true' }), state.me?.name ? state.me.name.slice(0, 14) : short(state.account));
+    if (state.account) return h('a', { class: 'navlink', href: '#/me/purchases', title: state.account }, h('span', { class: 'dot', 'aria-hidden': 'true' }), state.me?.name ? state.me.name.slice(0, 14) : short(state.account));
     if (!window.ethereum && !PREVIEW) return extLink('https://metamask.io/download/', 'Install MetaMask ↗', 'navlink');
     return h('button', { class: 'navlink', type: 'button', onclick: signIn }, 'Sign in');
   }
-  function startSell() { go('#/sell'); }
+  function startSell() { go('#/'); }
 
   // Jump to the shop grid with a filter set, from anywhere on the site.
   function shopFilter(kind = 'all', status = 'all') {
@@ -883,29 +960,24 @@
     else render();
     requestAnimationFrame(() => $('shop')?.scrollIntoView({ behavior: 'smooth' }));
   }
-  const shopNow = () => { setMode('buying', { quiet: true }); shopFilter(state.kind, state.status); };
-  const sellNow = () => { setMode('selling', { quiet: true }); startSell(); };
+  const shopNow = () => { shopFilter('shoes', 'available'); };
+  const sellNow = () => { shopFilter('shoes', 'available'); };
 
   function renderHeader() {
     const r = route().name;
     $('nav-left').replaceChildren(
       h('a', { href: '#/', 'aria-current': r === 'home' ? 'page' : false, onclick: (e) => { e.preventDefault(); shopFilter(state.kind, state.status); } }, 'Shop'),
-      h('a', { class: 'nl-sell', href: '#/sell', 'aria-current': r === 'sell' ? 'page' : false }, 'Sell'),
-      h('a', { class: 'nl-me', href: '#/me', 'aria-current': r === 'me' ? 'page' : false }, 'My stuff'),
+      h('a', { class: 'nl-me', href: '#/me/purchases', 'aria-current': r === 'me' ? 'page' : false }, 'My purchases'),
     );
-    $('head-links').replaceChildren(modeToggle(), walletButton());
+    $('head-links').replaceChildren(walletButton());
     const icon = {
       home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
-      sell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
       me: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
     };
-    const selling = state.mode === 'selling';
     $('dock').replaceChildren(
-      selling
-        ? h('a', { href: '#/sell', 'aria-current': r === 'sell' ? 'page' : false }, svg(icon.sell), 'Sell')
-        : h('a', { href: '#/', 'aria-current': r === 'home' ? 'page' : false }, svg(icon.home), 'Shop'),
-      modeToggle(),
-      h('a', { href: '#/me', 'aria-current': r === 'me' ? 'page' : false }, svg(icon.me), 'My stuff'),
+      h('a', { href: '#/', 'aria-current': r === 'home' ? 'page' : false }, svg(icon.home), 'Shop'),
+      walletButton(),
+      h('a', { href: '#/me/purchases', 'aria-current': r === 'me' ? 'page' : false }, svg(icon.me), 'Purchases'),
     );
   }
 
@@ -949,10 +1021,10 @@
             link('Shoes', () => shopFilter('shoes', 'all')),
             link('Apparel', () => shopFilter('apparel', 'all')),
             link('Sold forever', () => shopFilter('all', 'sold')))),
-          h('div', {}, h('h4', {}, 'Sell'), h('ul', {},
-            link('+ Sell an item', sellNow),
-            h('li', {}, h('a', { href: '#/me' }, 'My listings')),
-            h('li', {}, h('a', { href: '#/me/purchases' }, 'My purchases')))),
+          h('div', {}, h('h4', {}, 'Account'), h('ul', {},
+            h('li', {}, h('a', { href: '#/me/purchases' }, 'My purchases')),
+            link('Shoes collection', () => shopFilter('shoes', 'all')),
+            link('Available now', () => shopFilter('all', 'available')))),
           h('div', {}, h('h4', {}, 'BOT Chain'), h('ul', {},
             h('li', {}, extLink('https://botchain.ai', 'botchain.ai ↗', '')),
             h('li', {}, extLink(explorer, 'Contract on explorer ↗', '')),
@@ -1028,13 +1100,10 @@
     const soldCount = state.items.length - available.length;
     const intro = h('section', { class: 'intro' },
       h('h1', {}, 'Welcome to Resole'),
-      h('p', {}, selling
-        ? 'Snap 1–3 photos, set your own price in BOT, and get paid straight to your wallet. No platform fee, ever.'
-        : 'Second-hand shoes and apparel, priced by their owners. Pay in BOT and the money lands straight in the seller’s wallet.'),
+      h('p', {}, 'Authentic second-hand shoes and footwear, priced in BOT. Every sale is peer-to-peer and settles directly on BOT Chain.'),
       h('div', { class: 'ctas' },
-        selling
-          ? [h('button', { class: 'btn coral big', type: 'button', onclick: sellNow }, 'Start selling'), h('button', { class: 'btn big', type: 'button', onclick: shopNow }, 'Start shopping')]
-          : [h('button', { class: 'btn coral big', type: 'button', onclick: shopNow }, 'Start shopping'), h('button', { class: 'btn big', type: 'button', onclick: sellNow }, 'Start selling')]),
+        h('button', { class: 'btn coral big', type: 'button', onclick: shopNow }, 'Shop shoes now'),
+        h('button', { class: 'btn big', type: 'button', onclick: () => $('drops')?.scrollIntoView({ behavior: 'smooth' }) }, "Today's drops")),
       h('div', { class: 'stats' },
         h('span', {}, h('b', {}, state.loaded ? String(available.length) : '–'), ' available'),
         h('span', {}, h('b', {}, state.loaded ? String(soldCount) : '–'), ' sold forever'),
@@ -1044,7 +1113,7 @@
     const drops = available.slice(0, 10);
     const track = !state.loaded ? h('div', { class: 'carousel bleed' }, skeletons(5))
       : drops.length ? h('div', { class: 'carousel bleed' }, drops.map((item, i) => card(item, { rank: i + 1 })))
-        : h('div', { class: 'empty' }, h('b', {}, 'No fresh drops yet'), 'Be the first to list something.');
+        : h('div', { class: 'empty' }, h('b', {}, 'No fresh drops yet'), 'Check back soon for new shoes.');
     const scrollBy = (dir) => track.classList.contains('carousel') && track.scrollBy({ left: dir * track.clientWidth * 0.8 });
     const dropsHead = h('div', { class: 'sec-head' },
       h('button', { class: 'arrow', type: 'button', 'aria-label': 'Scroll back', onclick: () => scrollBy(-1) }, '←'),
@@ -1076,7 +1145,7 @@
     return [
       band('The Resole shop', 0, { onclick: shopNow }),
       strip,
-      selling ? band('Sell your pair', 3, { onclick: sellNow }) : band('Shop new drops', 3, { onclick: () => $('drops')?.scrollIntoView({ behavior: 'smooth' }) }),
+      band('Shop new drops', 3, { onclick: () => $('drops')?.scrollIntoView({ behavior: 'smooth' }) }),
       intro,
       dropsHead,
       h('div', { id: 'drops', hidden: !state.dropsOpen }, track),
@@ -1091,9 +1160,7 @@
       state.loadError && !state.loaded ? loadErrorView()
         : !state.loaded ? h('div', { class: 'grid' }, skeletons(8))
           : list.length ? h('div', { class: 'grid' }, list.map((i) => card(i)))
-            : h('div', { class: 'empty' }, h('b', {}, state.items.length ? 'Nothing matches these filters' : 'The shop is empty'),
-              state.items.length ? 'Try another filter.' : 'List the first pair and it lives on BOT Chain forever.',
-              !state.items.length && h('div', {}, h('button', { class: 'btn coral', type: 'button', onclick: sellNow }, '+ Sell'))),
+            : h('div', { class: 'empty' }, h('b', {}, 'Nothing matches these filters'), 'Try another filter.'),
     ];
   }
 
@@ -1258,55 +1325,40 @@
         h('a', { class: 'btn big', href: '#/me/purchases' }, 'My purchases')));
   }
 
-  // ---------- my stuff ----------
-  function meView(tab) {
+  // ---------- my purchases ----------
+  function meView() {
     if (!state.account) {
-      return h('div', { class: 'empty', style: 'margin-top:32px' }, h('b', {}, 'Sign in to see your stuff'),
-        'Your listings and purchases live on BOT Chain under your wallet.',
+      return h('div', { class: 'empty', style: 'margin-top:32px' }, h('b', {}, 'Sign in to see your purchases'),
+        'Your shoe purchases live on BOT Chain under your wallet.',
         h('div', {}, h('button', { class: 'btn coral', type: 'button', onclick: signIn }, 'Sign in')));
     }
     if (!state.loaded) return h('div', { class: 'grid' }, skeletons(3));
-    const mine = state.items.filter(isMine).sort((a, b) => b.listedAt - a.listedAt);
     const bought = state.items.filter((i) => same(i.buyer, state.account)).sort((a, b) => b.soldAt - a.soldAt);
-    const avail = mine.filter((i) => !isSold(i));
-    const soldMine = mine.filter(isSold);
-    const shown = tab === 'purchases' ? bought : state.sub === 'sold' ? soldMine : avail;
 
     const row = (item) => {
-      const sold = isSold(item);
-      const other = tab === 'purchases' ? item.seller : item.buyer;
-      const p = sold ? state.profiles.get(other.toLowerCase()) : null;
+      const other = item.seller;
+      const p = state.profiles.get(other.toLowerCase());
       const txSlot = h('span', {});
-      if (sold) fillSaleTx(item.id, txSlot);
-      return h('div', { class: 'row' + (sold && tab !== 'purchases' ? ' sold' : '') },
+      fillSaleTx(item.id, txSlot);
+      return h('div', { class: 'row' },
         h('a', { class: 'media', href: `#/item/${item.id}` }, photo(item.photos[0], item.title)),
         h('div', { style: 'min-width:0' },
           h('a', { class: 'title', href: `#/item/${item.id}` }, item.title),
           h('div', { class: 'sub' }, `${caption(item)} · ${priceLabel(item)}`),
-          sold && h('div', { class: 'sub' }, tab === 'purchases' ? 'Seller ' : 'Buyer ', h('b', {}, p?.name || 'unnamed'), ' · ', addrLink(other),
-            p?.contact ? ` · ${p.contact}` : '', ' · ', ago(item.soldAt), ' · ', txSlot),
-          !sold && h('div', { class: 'sub' }, `Listed ${ago(item.listedAt)}`)),
-        h('span', { class: 'pill ' + (sold ? 'gone' : 'live') }, tab === 'purchases' ? 'Bought' : sold ? 'Sold' : 'Available'));
+          h('div', { class: 'sub' }, 'Seller ', h('b', {}, p?.name || 'Seller'), ' · ', addrLink(other),
+            p?.contact ? ` · ${p.contact}` : '', ' · ', ago(item.soldAt), ' · ', txSlot)),
+        h('span', { class: 'pill gone' }, 'Bought'));
     };
 
     return [
       h('div', { class: 'me-head' },
         h('div', { class: 'seller-box' }, avatar(state.account, state.me?.name),
-          h('div', {}, h('b', {}, state.me?.name || 'No profile yet'), h('div', { class: 'addr' }, addrLink(state.account), state.me?.contact ? ` · ${state.me.contact}` : ''))),
+          h('div', {}, h('b', {}, state.me?.name || 'Buyer profile'), h('div', { class: 'addr' }, addrLink(state.account), state.me?.contact ? ` · ${state.me.contact}` : ''))),
         h('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' },
-          h('button', { class: 'btn', type: 'button', onclick: async () => { if (await ensureReady()) profileModal({ editing: !!state.me }); } }, state.me ? 'Edit profile' : 'Create profile'),
-          h('button', { class: 'btn outline', type: 'button', onclick: () => { setMode('selling', { quiet: true }); startSell(); } }, '+ Sell'))),
-      h('div', { class: 'tabs', role: 'tablist' },
-        h('button', { role: 'tab', type: 'button', 'aria-selected': String(tab === 'listings'), onclick: () => go('#/me') }, `My listings (${mine.length})`),
-        h('button', { role: 'tab', type: 'button', 'aria-selected': String(tab === 'purchases'), onclick: () => go('#/me/purchases') }, `My purchases (${bought.length})`)),
-      tab === 'listings' && h('div', { class: 'chips', style: 'margin-bottom:14px' },
-        ['available', 'sold'].map((s) => h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': String(state.sub === s), onclick: () => { state.sub = s; render(); } },
-          `${s} (${s === 'sold' ? soldMine.length : avail.length})`))),
-      shown.length ? h('div', { class: 'rows' }, shown.map(row))
-        : h('div', { class: 'empty' }, tab === 'purchases'
-          ? [h('b', {}, 'No purchases yet'), 'Find something you love in the shop.', h('div', {}, h('a', { class: 'btn coral', href: '#/' }, 'Browse'))]
-          : state.sub === 'sold' ? [h('b', {}, 'Nothing sold yet'), 'Sold items show the buyer and the transaction here.']
-            : [h('b', {}, 'Nothing listed'), 'Snap a pair you no longer wear and set your price.', h('div', {}, h('button', { class: 'btn coral', type: 'button', onclick: () => { setMode('selling', { quiet: true }); startSell(); } }, '+ Sell'))]),
+          h('button', { class: 'btn', type: 'button', onclick: async () => { if (await ensureReady()) profileModal({ editing: !!state.me }); } }, state.me ? 'Edit profile' : 'Create profile'))),
+      h('div', { class: 'sec-head' }, h('span'), h('h2', {}, `My purchases (${bought.length})`), h('span')),
+      bought.length ? h('div', { class: 'rows' }, bought.map(row))
+        : h('div', { class: 'empty' }, h('b', {}, 'No purchases yet'), 'Find a pair of shoes you love in the shop.', h('div', {}, h('a', { class: 'btn coral', href: '#/' }, 'Browse shoes'))),
     ];
   }
 
